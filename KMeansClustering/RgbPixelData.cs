@@ -60,9 +60,9 @@ namespace KMeansClustering
     [StructLayout(LayoutKind.Sequential)]
     internal struct RgbPixelData
     {
-        public byte B;
-        public byte G;
         public byte R;
+        public byte G;
+        public byte B;
 
         public override bool Equals(object obj)
         {
@@ -87,6 +87,25 @@ namespace KMeansClustering
         public static bool operator !=(RgbPixelData a, RgbPixelData b)
         {
             return !(a == b);
+        }
+
+        public LinearRgbPixelData ToLinearRgb()
+        {
+            double sR = R / 255.0;
+            double sG = G / 255.0;
+            double sB = B / 255.0;
+
+            return new LinearRgbPixelData
+            {
+                R = convertGammaToLinear(sR),
+                G = convertGammaToLinear(sG),
+                B = convertGammaToLinear(sB)
+            };
+
+            double convertGammaToLinear(double u)
+            {
+                return u <= 0.04045 ? u / 12.92 : Math.Pow((u + 0.055) / 1.055, 2.4);
+            }
         }
     }
 }

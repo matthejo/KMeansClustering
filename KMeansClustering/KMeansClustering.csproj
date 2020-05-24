@@ -56,7 +56,9 @@
       <Generator>MSBuild:Compile</Generator>
       <SubType>Designer</SubType>
     </ApplicationDefinition>
+    <Compile Include="CieXyzPixelData.cs" />
     <Compile Include="HslPixelData.cs" />
+    <Compile Include="LinearRgbPixelData.cs" />
     <Compile Include="RgbPixelData.cs" />
     <Page Include="MainWindow.xaml">
       <Generator>MSBuild:Compile</Generator>

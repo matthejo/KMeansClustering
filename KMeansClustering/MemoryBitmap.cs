@@ -66,7 +66,7 @@ namespace KMeansClustering
             return pixelData;
         }
 
-        public Task<int> ClusterAsync(int clusterCount)
+        public Task<int> ClusterAsync(int clusterCount, int maxIterations = 50)
         {
             return Task.Run(() =>
             {
@@ -79,6 +79,10 @@ namespace KMeansClustering
                 while (!IterateNextCluster(clusterMeans, clusterAssignments))
                 {
                     iterationCount++;
+                    if (iterationCount >= maxIterations)
+                    {
+                        break;
+                    }
                 }
                 AssignPixelsFromClusters(clusterMeans, clusterAssignments);
 

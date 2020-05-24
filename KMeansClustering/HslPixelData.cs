@@ -9,8 +9,8 @@ namespace KMeansClustering
     internal sealed class HslPixelRepresentation : IPixelRepresentation<HslPixelData>
     {
         private const double sWeight = 1.0;
-        private const double lWeight = 2.0;
-        private const double hWeight = 1.0;
+        private const double lWeight = 4.0;
+        private const double hWeight = 4.0;
 
         public void AddSample(ref PixelDataMeanAccumulator accumulator, HslPixelData sample)
         {
