@@ -10,7 +10,6 @@ namespace KMeansClustering
     internal static class PixelRepresentations
     {
         public static readonly StandardRgbPixelRepresentation Rgb = new StandardRgbPixelRepresentation();
-        public static readonly HslPixelRepresentation Hsl = new HslPixelRepresentation();
         public static readonly CieXyzPixelRepresentation CieXyz = new CieXyzPixelRepresentation();
         public static readonly CieLabPixelRepresentation CieLab = new CieLabPixelRepresentation();
     }
@@ -19,8 +18,8 @@ namespace KMeansClustering
     {
         double DistanceSquared(TPixelData a, TPixelData b);
         bool Equals(TPixelData a, TPixelData b);
-        void ToPixelData(byte[] sourceRgbPixels, TPixelData[] targetPixelData, int sourcePixelIndex);
-        void FromPixelData(TPixelData[] sourcePixelData, byte[] targetRgbPixels, int targetPixelIndex);
+        TPixelData ConvertFromStandardRgb(StandardRgbPixelData pixel);
+        StandardRgbPixelData ConvertToStandardRgb(TPixelData pixel);
         void AddSample(ref PixelDataMeanAccumulator accumulator, TPixelData sample);
         TPixelData GetAverage(PixelDataMeanAccumulator accumulator);
     }

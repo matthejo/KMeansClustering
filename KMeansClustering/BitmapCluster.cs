@@ -10,73 +10,45 @@ using System.Windows.Media.Imaging;
 
 namespace KMeansClustering
 {
-    internal enum PixelRepresentation
-    {
-        RGB,
-        HSL
-    }
-
-    internal sealed class MemoryBitmap<TPixelRepresentation, TPixelData>
-        where TPixelData: struct
+    internal sealed class BitmapCluster<TPixelRepresentation, TPixelData>
+        where TPixelData : struct
         where TPixelRepresentation : IPixelRepresentation<TPixelData>
     {
-        private readonly BitmapSource source;
+        private readonly StandardRgbPixelData[] pixels;
         private readonly TPixelRepresentation pixelRepresentation;
         private readonly TPixelData[] pixelData;
 
-        public MemoryBitmap(BitmapSource source, TPixelRepresentation pixelRepresentation)
+        private readonly int[] pixelClusters;
+        private readonly TPixelData[] clusterMeans;
+
+        public BitmapCluster(StandardRgbPixelData[] pixels, TPixelRepresentation pixelRepresentation, int clusterCount)
         {
-            this.source = source;
+            this.pixels = pixels;
             this.pixelRepresentation = pixelRepresentation;
-            this.pixelData = ConvertToPixelData(source, pixelRepresentation);
+            this.pixelClusters = new int[pixels.Length];
+            this.pixelData = ConvertToPixelData(pixels, pixelRepresentation);
+            this.clusterMeans = new TPixelData[clusterCount];
         }
 
-        public BitmapSource Render()
+        public StandardRgbPixelData[] Render()
         {
-            int stride = source.PixelWidth * sizeof(int);
-
-            byte[] rawPixels = new byte[stride * source.PixelHeight];
-            for (int i = 0; i < rawPixels.Length; i += 4)
-            {
-                pixelRepresentation.FromPixelData(pixelData, rawPixels, i);
-            }
-
-            return BitmapSource.Create(source.PixelWidth, source.PixelHeight, source.DpiX, source.DpiY, PixelFormats.Bgra32, null, rawPixels, stride);
+            return pixelClusters.Select(i => pixelRepresentation.ConvertToStandardRgb(clusterMeans[i])).ToArray();
         }
 
-        private static TPixelData[] ConvertToPixelData(BitmapSource source, TPixelRepresentation pixelRepresentation)
+        private static TPixelData[] ConvertToPixelData(StandardRgbPixelData[] pixels, TPixelRepresentation pixelRepresentation)
         {
-            BitmapSource convertedSource = source;
-            if (source.Format != PixelFormats.Bgra32)
-            {
-                convertedSource = new FormatConvertedBitmap(source, PixelFormats.Bgra32, null, 1.0);
-            }
-
-            int stride = convertedSource.PixelWidth * sizeof(int);
-            byte[] rawPixels = new byte[stride * convertedSource.PixelHeight];
-            convertedSource.CopyPixels(rawPixels, stride, offset: 0);
-
-            TPixelData[] pixelData = new TPixelData[convertedSource.PixelWidth * convertedSource.PixelHeight];
-
-            for (int i = 0; i < rawPixels.Length; i += 4)
-            {
-                pixelRepresentation.ToPixelData(rawPixels, pixelData, i);
-            }
-
-            return pixelData;
+            return pixels.Select(p => pixelRepresentation.ConvertFromStandardRgb(p)).ToArray();
         }
 
-        public Task<int> ClusterAsync(int clusterCount, int maxIterations = 50)
+        public Task<int> ClusterAsync(int maxIterations = 200)
         {
             return Task.Run(() =>
             {
                 Random random = new Random();
-                TPixelData[] clusterMeans = new TPixelData[clusterCount];
-                int[] clusterAssignments = new int[source.PixelWidth * source.PixelHeight];
 
                 InitializeClusterSeeds(clusterMeans, random);
                 int iterationCount = 0;
-                while (!IterateNextCluster(clusterMeans, clusterAssignments))
+                while (!IterateNextCluster(clusterMeans, pixelClusters))
                 {
                     iterationCount++;
                     if (iterationCount >= maxIterations)
@@ -84,7 +56,7 @@ namespace KMeansClustering
                         break;
                     }
                 }
-                AssignPixelsFromClusters(clusterMeans, clusterAssignments);
+                AssignPixelsFromClusters(clusterMeans, pixelClusters);
 
                 return iterationCount;
             });

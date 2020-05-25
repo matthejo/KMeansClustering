@@ -15,6 +15,16 @@ namespace KMeansClustering
             accumulator.AddSample(sample.L, sample.a, sample.b);
         }
 
+        public CieLabPixelData ConvertFromStandardRgb(StandardRgbPixelData pixel)
+        {
+            return pixel.ToCieLab();
+        }
+
+        public StandardRgbPixelData ConvertToStandardRgb(CieLabPixelData pixel)
+        {
+            return pixel.ToStandardRgb();
+        }
+
         public double DistanceSquared(CieLabPixelData a, CieLabPixelData b)
         {
             double lDelta = a.L - b.L;
@@ -31,27 +41,10 @@ namespace KMeansClustering
                 Math.Abs(a.b - b.b) < Epsilon;
         }
 
-        public void FromPixelData(CieLabPixelData[] sourcePixelData, byte[] targetRgbPixels, int targetPixelIndex)
-        {
-            int sourceIndex = targetPixelIndex / 4;
-            StandardRgbPixelData rgbData = sourcePixelData[sourceIndex].ToStandardRgb();
-            targetRgbPixels[targetPixelIndex] = rgbData.B;
-            targetRgbPixels[targetPixelIndex + 1] = rgbData.G;
-            targetRgbPixels[targetPixelIndex + 2] = rgbData.R;
-            targetRgbPixels[targetPixelIndex + 3] = 0xFF;
-        }
-
         public CieLabPixelData GetAverage(PixelDataMeanAccumulator accumulator)
         {
             accumulator.GetAverage(out double x, out double y, out double z);
             return new CieLabPixelData { L = x, a = y, b = z };
-        }
-
-        public void ToPixelData(byte[] sourceRgbPixels, CieLabPixelData[] targetPixelData, int sourcePixelIndex)
-        {
-            int targetIndex = sourcePixelIndex / 4;
-            StandardRgbPixelData rgbPixel = new StandardRgbPixelData { B = sourceRgbPixels[sourcePixelIndex], G = sourceRgbPixels[sourcePixelIndex + 1], R = sourceRgbPixels[sourcePixelIndex + 2] };
-            targetPixelData[targetIndex] = rgbPixel.ToCieLab();
         }
     }
 
