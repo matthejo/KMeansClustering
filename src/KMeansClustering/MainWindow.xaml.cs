@@ -100,24 +100,30 @@ namespace KMeansClustering
                 BitmapCluster targetBitmap = null;
                 if (clusters < 16)
                 {
-                    currentStatus = "Creating initial 16-cluster seed...";
+                    currentStatus = "Creating initial 16-cluster seed... (iteration 0)";
                     targetBitmap = new BitmapCluster(sourceBitmap.Pixels, colorSpace, 16);
-                    await targetBitmap.ClusterAsync(3);
+                    await targetBitmap.ClusterAsync(i =>
+                    {
+                        currentStatus = $"Creating initial 16-cluster seed... (iteration {i})";
+                    }, 3);
 
                     currentStatus = $"Rendering 16-cluster image...";
                     ((Image)parent.Children[targetIndex]).Source = new StandardRgbBitmap(await targetBitmap.RenderAsync(), sourceBitmap.Width, sourceBitmap.Height, sourceBitmap.DpiX, sourceBitmap.DpiY).ToBitmapSource();
 
-                    currentStatus = $"Computing refined {clusters}-cluster image...";
+                    currentStatus = $"Choosing refined seed colors...";
                     var newSeedClusters = await targetBitmap.ChooseDifferentiatedClusters(clusters);
                     targetBitmap = new BitmapCluster(sourceBitmap.Pixels, colorSpace, newSeedClusters);
                 }
                 else
                 {
-                    currentStatus = $"Computing {clusters}-cluster image...";
                     targetBitmap = new BitmapCluster(sourceBitmap.Pixels, colorSpace, clusters);
                 }
 
-                await targetBitmap.ClusterAsync(200);
+                currentStatus = $"Computing {clusters}-cluster image... (iteration 0)";
+                await targetBitmap.ClusterAsync(i =>
+                {
+                    currentStatus = $"Computing {clusters}-cluster image... (iteration {i})";
+                }, 200);
 
                 currentStatus = $"Rendering {clusters}-cluster image...";
                 ((Image)parent.Children[targetIndex]).Source = new StandardRgbBitmap(await targetBitmap.RenderAsync(), sourceBitmap.Width, sourceBitmap.Height, sourceBitmap.DpiX, sourceBitmap.DpiY).ToBitmapSource();

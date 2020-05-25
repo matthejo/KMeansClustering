@@ -82,7 +82,7 @@ namespace KMeansClustering
             });
         }
 
-        public Task<int> ClusterAsync(int maxIterations = 50)
+        public Task<int> ClusterAsync(Action<int> iterationProgressUpdate, int maxIterations = 50)
         {
             return Task.Run(() =>
             {
@@ -98,6 +98,7 @@ namespace KMeansClustering
                 while (!IterateNextCluster(clusterMeans, pixelClusters))
                 {
                     iterationCount++;
+                    iterationProgressUpdate?.Invoke(iterationCount);
                     if (iterationCount >= maxIterations)
                     {
                         break;
