@@ -40,6 +40,7 @@ namespace KMeansClustering
             {
                 sourceImage = BitmapFrame.Create(new Uri(dialog.FileName), BitmapCreateOptions.None, BitmapCacheOption.Default);
                 OriginalImage.Source = sourceImage;
+                ComputeOptions.IsEnabled = true;
             }
         }
 
@@ -55,8 +56,6 @@ namespace KMeansClustering
 
             this.IsEnabled = false;
             computeStarted = DateTime.Now;
-            DispatcherTimer timer = new DispatcherTimer(TimeSpan.FromMilliseconds(100), DispatcherPriority.Normal, OnTick, Dispatcher);
-            timer.Start();
 
             StandardRgbBitmap sourceBitmap = sourceImage.ToStandardRgbBitmap();
 
@@ -77,21 +76,25 @@ namespace KMeansClustering
             CIELabColorSlices.Children.Clear();
 
             await Task.WhenAll(
-                UpdateGroup<StandardRgbPixelRepresentation, StandardRgbPixelData>(clusters, sourceBitmap, PixelRepresentations.Rgb, RGBImageGrid, RGBColorSlices),
-                UpdateGroup<CieLuvPixelRepresentation, CieLuvPixelData>(clusters, sourceBitmap, PixelRepresentations.CieLuv, CIELUVImageGrid, CIELUVColorSlices),
-                UpdateGroup<CieLabPixelRepresentation, CieLabPixelData>(clusters, sourceBitmap, PixelRepresentations.CieLab, CIELABImageGrid, CIELabColorSlices)
+                UpdateGroup<StandardRgbPixelRepresentation, StandardRgbPixelData>(clusters, sourceBitmap, PixelRepresentations.Rgb, RGBImageGrid, RGBColorSlices, RGBStatus),
+                UpdateGroup<CieLuvPixelRepresentation, CieLuvPixelData>(clusters, sourceBitmap, PixelRepresentations.CieLuv, CIELUVImageGrid, CIELUVColorSlices, CIELuvStatus),
+                UpdateGroup<CieLabPixelRepresentation, CieLabPixelData>(clusters, sourceBitmap, PixelRepresentations.CieLab, CIELABImageGrid, CIELabColorSlices, CIELabStatus)
                 );
 
-            timer.Stop();
             this.IsEnabled = true;
-            ResultStatus.Content = $"Completed in {(int)((DateTime.Now - computeStarted).TotalSeconds)} seconds.";
-
         }
 
-        private async Task UpdateGroup<TPixelRepresentation, TPixelData>(int clusters, StandardRgbBitmap sourceBitmap, TPixelRepresentation pixelRepresentation, Panel parent, Grid colorSlices = null)
+        private async Task UpdateGroup<TPixelRepresentation, TPixelData>(int clusters, StandardRgbBitmap sourceBitmap, TPixelRepresentation pixelRepresentation, Panel parent, Grid colorSlices, Label label)
             where TPixelData : struct
             where TPixelRepresentation : IPixelRepresentation<TPixelData>
         {
+            EventHandler onTick = (sender, e) =>
+            {
+                label.Content = $"Computing clusters... [{DateTime.Now - computeStarted:mm\\:ss}]";
+            };
+            DispatcherTimer timer = new DispatcherTimer(TimeSpan.FromMilliseconds(100), DispatcherPriority.Normal, onTick, Dispatcher);
+            timer.Start();
+
             for (int targetIndex = 0; targetIndex < parent.Children.Count; targetIndex++)
             {
                 int currentClusterCount = Math.Max(clusters, 16);
@@ -128,11 +131,9 @@ namespace KMeansClustering
                     }
                 }
             }
-        }
 
-        private void OnTick(object sender, EventArgs e)
-        {
-            ResultStatus.Content = $"Computing clusters... [{DateTime.Now - computeStarted:mm\\:ss}]";
+            timer.Stop();
+            label.Content = null;
         }
     }
 }

@@ -5,10 +5,10 @@
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
         xmlns:local="clr-namespace:KMeansClustering"
         mc:Ignorable="d"
-        Title="MainWindow" Height="450" Width="800">
+        FontSize="14"
+        Title="MainWindow" Height="800" Width="1000">
     <Grid>
         <Grid.RowDefinitions>
-            <RowDefinition Height="Auto" />
             <RowDefinition Height="*" />
             <RowDefinition Height="*" />
         </Grid.RowDefinitions>
@@ -17,23 +17,23 @@
             <ColumnDefinition Width="*" />
         </Grid.ColumnDefinitions>
 
-        <StackPanel Grid.Row="0" Grid.ColumnSpan="2" Orientation="Horizontal" Margin="0,8">
-            <Button Content="Load Image" Click="LoadImage" Margin="8,0" />
-            <Label Content="Cluster count:" Margin="8,0" />
-            <TextBox x:Name="ClusterCount" Text="4" MinWidth="70" Margin="0" />
-            <Button Content="Compute" Click="Compute" Margin="8,0" />
-            <Label x:Name="ResultStatus" Margin="8,0" />
-        </StackPanel>
-
-        <Border Grid.Row="1" BorderBrush="LightGray" BorderThickness="1" Margin="8,0,0,0">
+        <Border Grid.Row="0" BorderBrush="LightGray" BorderThickness="1" Margin="8,0,0,0">
             <DockPanel LastChildFill="True">
                 <Border DockPanel.Dock="Top" Background="#EEEEEE">
-                    <Label Content="Original" FontSize="16" FontWeight="Bold" Margin="8,8,20,8"/>
+                    <DockPanel LastChildFill="False">
+                        <Label Content="Original" FontSize="16" FontWeight="Bold" Margin="8,8,20,8" DockPanel.Dock="Left"/>
+                        <StackPanel DockPanel.Dock="Right" Orientation="Horizontal" Margin="0,8" x:Name="ComputeOptions" IsEnabled="False">
+                            <Label Content="Cluster count:" Margin="8,0" DockPanel.Dock="Right" />
+                            <TextBox x:Name="ClusterCount" Text="4" MinWidth="70" Margin="0" DockPanel.Dock="Right" VerticalContentAlignment="Center"/>
+                            <Button Content="Compute" Click="Compute" Margin="8,0" MinWidth="72" Padding="8,4"/>
+                        </StackPanel>
+                        <Button Content="Load Image" Click="LoadImage" Margin="8" DockPanel.Dock="Right" MinWidth="72" Padding="8,4"/>
+                    </DockPanel>
                 </Border>
                 <Image x:Name="OriginalImage" Stretch="Uniform"  />
             </DockPanel>
         </Border>
-        <Border Grid.Row="1" Grid.Column="1" BorderBrush="LightGray" BorderThickness="0,1,1,1" Margin="0,0,8,0">
+        <Border Grid.Row="0" Grid.Column="1" BorderBrush="LightGray" BorderThickness="0,1,1,1" Margin="0,0,8,0">
             <DockPanel LastChildFill="True">
                 <Border DockPanel.Dock="Top" Background="#EEEEEE">
                     <DockPanel LastChildFill="True">
@@ -41,12 +41,15 @@
                         <Grid x:Name="RGBColorSlices" Margin="2" />
                     </DockPanel>
                 </Border>
-                <UniformGrid Rows="1" x:Name="RGBImageGrid">
-                    <Image Stretch="Uniform"  />
-                </UniformGrid>
+                <Grid>
+                    <UniformGrid Rows="1" x:Name="RGBImageGrid">
+                        <Image Stretch="Uniform"  />
+                    </UniformGrid>
+                    <Label HorizontalAlignment="Center" VerticalAlignment="Center" x:Name="RGBStatus" />
+                </Grid>
             </DockPanel>
         </Border>
-        <Border Grid.Row="2" Grid.Column="0" BorderBrush="LightGray" BorderThickness="1,0,1,1" Margin="8,0,0,8">
+        <Border Grid.Row="1" Grid.Column="0" BorderBrush="LightGray" BorderThickness="1,0,1,1" Margin="8,0,0,8">
             <DockPanel LastChildFill="True">
                 <Border DockPanel.Dock="Top" Background="#EEEEEE">
                     <DockPanel LastChildFill="True">
@@ -54,12 +57,15 @@
                         <Grid x:Name="CIELUVColorSlices" Margin="2" />
                     </DockPanel>
                 </Border>
-                <UniformGrid Rows="1" x:Name="CIELUVImageGrid">
-                    <Image Stretch="Uniform"  />
-                </UniformGrid>
+                <Grid>
+                    <UniformGrid Rows="1" x:Name="CIELUVImageGrid">
+                        <Image Stretch="Uniform"  />
+                    </UniformGrid>
+                    <Label HorizontalAlignment="Center" VerticalAlignment="Center" x:Name="CIELuvStatus" />
+                </Grid>
             </DockPanel>
         </Border>
-        <Border Grid.Row="2" Grid.Column="1" BorderBrush="LightGray" BorderThickness="0,0,1,1" Margin="0,0,8,8">
+        <Border Grid.Row="1" Grid.Column="1" BorderBrush="LightGray" BorderThickness="0,0,1,1" Margin="0,0,8,8">
             <DockPanel LastChildFill="True">
                 <Border DockPanel.Dock="Top" Background="#EEEEEE">
                     <DockPanel LastChildFill="True">
@@ -67,9 +73,12 @@
                         <Grid x:Name="CIELabColorSlices" Margin="2" />
                     </DockPanel>
                 </Border>
-                <UniformGrid Rows="1" x:Name="CIELABImageGrid">
-                    <Image Stretch="Uniform"  />
-                </UniformGrid>
+                <Grid>
+                    <UniformGrid Rows="1" x:Name="CIELABImageGrid">
+                        <Image Stretch="Uniform"  />
+                    </UniformGrid>
+                    <Label HorizontalAlignment="Center" VerticalAlignment="Center" x:Name="CIELabStatus" />
+                </Grid>
             </DockPanel>
         </Border>
     </Grid>
