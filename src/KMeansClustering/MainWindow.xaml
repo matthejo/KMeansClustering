@@ -45,7 +45,7 @@
                     <UniformGrid Rows="1" x:Name="RGBImageGrid">
                         <Image Stretch="Uniform"  />
                     </UniformGrid>
-                    <Label HorizontalAlignment="Center" VerticalAlignment="Center" x:Name="RGBStatus" />
+                    <Label HorizontalContentAlignment="Center" HorizontalAlignment="Stretch" VerticalAlignment="Center" x:Name="RGBStatus" Background="White" Visibility="Hidden"/>
                 </Grid>
             </DockPanel>
         </Border>
@@ -61,7 +61,7 @@
                     <UniformGrid Rows="1" x:Name="CIELUVImageGrid">
                         <Image Stretch="Uniform"  />
                     </UniformGrid>
-                    <Label HorizontalAlignment="Center" VerticalAlignment="Center" x:Name="CIELuvStatus" />
+                    <Label HorizontalContentAlignment="Center" HorizontalAlignment="Stretch" VerticalAlignment="Center" x:Name="CIELuvStatus" Background="White" Visibility="Hidden"/>
                 </Grid>
             </DockPanel>
         </Border>
@@ -77,7 +77,7 @@
                     <UniformGrid Rows="1" x:Name="CIELABImageGrid">
                         <Image Stretch="Uniform"  />
                     </UniformGrid>
-                    <Label HorizontalAlignment="Center" VerticalAlignment="Center" x:Name="CIELabStatus" />
+                    <Label HorizontalContentAlignment="Center" HorizontalAlignment="Stretch" VerticalAlignment="Center" x:Name="CIELabStatus" Background="White" Visibility="Hidden" />
                 </Grid>
             </DockPanel>
         </Border>

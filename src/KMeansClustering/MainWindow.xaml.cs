@@ -86,9 +86,11 @@ namespace KMeansClustering
 
         private async Task UpdateGroup(int clusters, StandardRgbBitmap sourceBitmap, IColorSpace colorSpace, Panel parent, Grid colorSlices, Label label)
         {
+            string currentStatus = "Computing clusters...";
+            label.Visibility = Visibility.Visible;
             EventHandler onTick = (sender, e) =>
             {
-                label.Content = $"Computing clusters... [{DateTime.Now - computeStarted:mm\\:ss}]";
+                label.Content = $"{currentStatus} [{DateTime.Now - computeStarted:mm\\:ss}]";
             };
             DispatcherTimer timer = new DispatcherTimer(TimeSpan.FromMilliseconds(100), DispatcherPriority.Normal, onTick, Dispatcher);
             timer.Start();
@@ -98,19 +100,27 @@ namespace KMeansClustering
                 BitmapCluster targetBitmap = null;
                 if (clusters < 16)
                 {
+                    currentStatus = "Creating initial 16-cluster seed...";
                     targetBitmap = new BitmapCluster(sourceBitmap.Pixels, colorSpace, 16);
                     await targetBitmap.ClusterAsync(3);
-                    
+
+                    currentStatus = $"Rendering 16-cluster image...";
+                    ((Image)parent.Children[targetIndex]).Source = new StandardRgbBitmap(await targetBitmap.RenderAsync(), sourceBitmap.Width, sourceBitmap.Height, sourceBitmap.DpiX, sourceBitmap.DpiY).ToBitmapSource();
+
+                    currentStatus = $"Computing refined {clusters}-cluster image...";
                     var newSeedClusters = await targetBitmap.ChooseDifferentiatedClusters(clusters);
                     targetBitmap = new BitmapCluster(sourceBitmap.Pixels, colorSpace, newSeedClusters);
                 }
                 else
                 {
+                    currentStatus = $"Computing {clusters}-cluster image...";
                     targetBitmap = new BitmapCluster(sourceBitmap.Pixels, colorSpace, clusters);
                 }
 
                 await targetBitmap.ClusterAsync(200);
-                ((Image)parent.Children[targetIndex]).Source = new StandardRgbBitmap(targetBitmap.Render(), sourceBitmap.Width, sourceBitmap.Height, sourceBitmap.DpiX, sourceBitmap.DpiY).ToBitmapSource();
+
+                currentStatus = $"Rendering {clusters}-cluster image...";
+                ((Image)parent.Children[targetIndex]).Source = new StandardRgbBitmap(await targetBitmap.RenderAsync(), sourceBitmap.Width, sourceBitmap.Height, sourceBitmap.DpiX, sourceBitmap.DpiY).ToBitmapSource();
 
                 if (colorSlices != null)
                 {
@@ -140,6 +150,7 @@ namespace KMeansClustering
 
             timer.Stop();
             label.Content = null;
+            label.Visibility = Visibility.Hidden;
         }
     }
 }

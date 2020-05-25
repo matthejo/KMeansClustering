@@ -38,9 +38,9 @@ namespace KMeansClustering
             this.clusterWeights = new int[clusterCount];
         }
 
-        public StandardRgbColor[] Render()
+        public Task<StandardRgbColor[]> RenderAsync()
         {
-            return pixelClusters.Select(i => colorSpace.ConvertToStandardRgb(clusterMeans[i])).ToArray();
+            return Task.Run(() => pixelClusters.Select(i => colorSpace.ConvertToStandardRgb(clusterMeans[i])).ToArray());
         }
 
         private static Vector3[] ConvertToColorSpace(StandardRgbColor[] pixels, IColorSpace colorSpace)
