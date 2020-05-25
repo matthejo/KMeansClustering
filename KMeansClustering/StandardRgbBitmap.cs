@@ -2,7 +2,7 @@
 {
     internal sealed class StandardRgbBitmap
     {
-        public StandardRgbPixelData[] Pixels { get; }
+        public StandardRgbColor[] Pixels { get; }
 
         public int Width { get; }
 
@@ -12,7 +12,7 @@
 
         public double DpiY { get; }
 
-        public StandardRgbBitmap(StandardRgbPixelData[] pixels, int width, int height, double dpiX, double dpiY)
+        public StandardRgbBitmap(StandardRgbColor[] pixels, int width, int height, double dpiX, double dpiY)
         {
             Pixels = pixels;
             Width = width;

@@ -61,9 +61,9 @@ namespace KMeansClustering
             M44 = 1.0f
         });
 
-        public static StandardRgbPixelData ToStandardRgb(this LinearRgbPixelData source)
+        public static StandardRgbColor ToStandardRgb(this LinearRgbColor source)
         {
-            return new StandardRgbPixelData
+            return new StandardRgbColor
             {
                 R = (byte)Math.Round(convertLinearToGamma(source.R) * 255),
                 G = (byte)Math.Round(convertLinearToGamma(source.G) * 255),
@@ -76,46 +76,46 @@ namespace KMeansClustering
             }
         }
 
-        public static StandardRgbPixelData ToStandardRgb(this CieXyzPixelData source)
+        public static StandardRgbColor ToStandardRgb(this CieXyzColor source)
         {
             return source.ToLinearRgb().ToStandardRgb();
         }
 
-        public static StandardRgbPixelData ToStandardRgb(this CieLabPixelData source)
+        public static StandardRgbColor ToStandardRgb(this CieLabColor source)
         {
             return source.ToCieXyz().ToStandardRgb();
         }
 
-        public static StandardRgbPixelData ToStandardRgb(this CieLuvPixelData source)
+        public static StandardRgbColor ToStandardRgb(this CieLuvColor source)
         {
             return source.ToCieXyz().ToStandardRgb();
         }
 
-        public static LinearRgbPixelData ToLinearRgb(this StandardRgbPixelData source)
+        public static LinearRgbColor ToLinearRgb(this StandardRgbColor source)
         {
-            double sR = source.R / 255.0;
-            double sG = source.G / 255.0;
-            double sB = source.B / 255.0;
+            float sR = source.R / 255.0f;
+            float sG = source.G / 255.0f;
+            float sB = source.B / 255.0f;
 
-            return new LinearRgbPixelData
+            return new LinearRgbColor
             {
                 R = convertGammaToLinear(sR),
                 G = convertGammaToLinear(sG),
                 B = convertGammaToLinear(sB)
             };
 
-            double convertGammaToLinear(double u)
+            float convertGammaToLinear(float u)
             {
-                return u <= 0.04045 ? u / 12.92 : Math.Pow((u + 0.055) / 1.055, 2.4);
+                return u <= 0.04045f ? u / 12.92f : (float)Math.Pow((u + 0.055) / 1.055, 2.4);
             }
         }
 
-        public static LinearRgbPixelData ToLinearRgb(this CieXyzPixelData source)
+        public static LinearRgbColor ToLinearRgb(this CieXyzColor source)
         {
             Vector4 xyz = new Vector4((float)source.X, (float)source.Y, (float)source.Z, 1.0f);
             Vector4 rgb = Vector4.Transform(xyz, cieToLinearRgbTransform);
 
-            return new LinearRgbPixelData
+            return new LinearRgbColor
             {
                 R = rgb.X,
                 G = rgb.Y,
@@ -123,27 +123,27 @@ namespace KMeansClustering
             };
         }
 
-        public static LinearRgbPixelData ToLinearRgb(this CieLabPixelData source)
+        public static LinearRgbColor ToLinearRgb(this CieLabColor source)
         {
             return source.ToCieXyz().ToLinearRgb();
         }
 
-        public static LinearRgbPixelData ToLinearRgb(this CieLuvPixelData source)
+        public static LinearRgbColor ToLinearRgb(this CieLuvColor source)
         {
             return source.ToCieXyz().ToLinearRgb();
         }
 
-        public static CieXyzPixelData ToCieXyz(this StandardRgbPixelData source)
+        public static CieXyzColor ToCieXyz(this StandardRgbColor source)
         {
             return source.ToLinearRgb().ToCieXyz();
         }
 
-        public static CieXyzPixelData ToCieXyz(this LinearRgbPixelData source)
+        public static CieXyzColor ToCieXyz(this LinearRgbColor source)
         {
             Vector4 rgb = new Vector4((float)source.R, (float)source.G, (float)source.B, 1.0f);
             Vector4 xyz = Vector4.Transform(rgb, linearRgbToCieTransform);
 
-            return new CieXyzPixelData
+            return new CieXyzColor
             {
                 X = xyz.X,
                 Y = xyz.Y,
@@ -151,13 +151,13 @@ namespace KMeansClustering
             };
         }
 
-        public static CieXyzPixelData ToCieXyz(this CieLabPixelData source)
+        public static CieXyzColor ToCieXyz(this CieLabColor source)
         {
             float X = CieConstants.Xn * fInverse((source.L + 16.0f) / 116.0f + source.a / 500.0f);
             float Y = CieConstants.Yn * fInverse((source.L + 16.0f) / 116.0f);
             float Z = CieConstants.Zn * fInverse((source.L + 16.0f) / 116.0f - source.b / 200.0f);
 
-            return new CieXyzPixelData
+            return new CieXyzColor
             {
                 X = X,
                 Y = Y,
@@ -170,7 +170,7 @@ namespace KMeansClustering
             }
         }
 
-        public static CieXyzPixelData ToCieXyz(this CieLuvPixelData source)
+        public static CieXyzColor ToCieXyz(this CieLuvColor source)
         {
             float uPrime = source.u / (13.0f * source.L) + CieConstants.uN;
             float vPrime = source.v / (13.0f * source.L) + CieConstants.vN;
@@ -179,7 +179,7 @@ namespace KMeansClustering
             float X = Y * (9.0f * uPrime) / (4.0f * vPrime);
             float Z = Y * (12.0f - 3 * uPrime - 20.0f * vPrime) / (4.0f * vPrime);
 
-            return new CieXyzPixelData
+            return new CieXyzColor
             {
                 X = X,
                 Y = Y,
@@ -187,23 +187,23 @@ namespace KMeansClustering
             };
         }
 
-        public static CieLabPixelData ToCieLab(this StandardRgbPixelData source)
+        public static CieLabColor ToCieLab(this StandardRgbColor source)
         {
             return source.ToLinearRgb().ToCieLab();
         }
 
-        public static CieLabPixelData ToCieLab(this LinearRgbPixelData source)
+        public static CieLabColor ToCieLab(this LinearRgbColor source)
         {
             return source.ToCieXyz().ToCieLab();
         }
 
-        public static CieLabPixelData ToCieLab(this CieXyzPixelData source)
+        public static CieLabColor ToCieLab(this CieXyzColor source)
         {
             float L = 116.0f * f(source.Y / CieConstants.Yn) - 16.0f;
             float a = 500.0f * (f(source.X / CieConstants.Xn) - f(source.Y / CieConstants.Yn));
             float b = 200.0f * (f(source.Y / CieConstants.Yn) - f(source.Z / CieConstants.Zn));
 
-            return new CieLabPixelData
+            return new CieLabColor
             {
                 L = L,
                 a = a,
@@ -216,27 +216,27 @@ namespace KMeansClustering
             }
         }
 
-        public static CieLabPixelData ToCieLab(this CieLuvPixelData source)
+        public static CieLabColor ToCieLab(this CieLuvColor source)
         {
             return source.ToCieXyz().ToCieLab();
         }
 
-        public static CieLuvPixelData ToCieLuv(this StandardRgbPixelData source)
+        public static CieLuvColor ToCieLuv(this StandardRgbColor source)
         {
             return source.ToLinearRgb().ToCieLuv();
         }
 
-        public static CieLuvPixelData ToCieLuv(this LinearRgbPixelData source)
+        public static CieLuvColor ToCieLuv(this LinearRgbColor source)
         {
             return source.ToCieXyz().ToCieLuv();
         }
 
-        public static CieLuvPixelData ToCieLuv(this CieLabPixelData source)
+        public static CieLuvColor ToCieLuv(this CieLabColor source)
         {
             return source.ToCieXyz().ToCieLuv();
         }
 
-        public static CieLuvPixelData ToCieLuv(this CieXyzPixelData source)
+        public static CieLuvColor ToCieLuv(this CieXyzColor source)
         {
             const float inflectionPoint = (6.0f / 29.0f) * (6.0f / 29.0f) * (6.0f / 29.0f);
             float inflectionTest = source.Y / CieConstants.Yn;
@@ -248,7 +248,7 @@ namespace KMeansClustering
             float u = 13.0f * L * (uPrime - CieConstants.uN);
             float v = 13.0f * L * (vPrime - CieConstants.vN);
 
-            return new CieLuvPixelData
+            return new CieLuvColor
             {
                 L = L,
                 u = u,

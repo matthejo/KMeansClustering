@@ -2,34 +2,34 @@
 
 namespace KMeansClustering
 {
-    internal sealed class CieLabPixelRepresentation : IPixelRepresentation
+    internal sealed class CieLabColorSpace : IColorSpace
     {
-        public Vector3 ConvertFromStandardRgb(StandardRgbPixelData pixel)
+        public Vector3 ConvertFromStandardRgb(StandardRgbColor pixel)
         {
             return (Vector3)pixel.ToCieLab();
         }
 
-        public StandardRgbPixelData ConvertToStandardRgb(Vector3 pixel)
+        public StandardRgbColor ConvertToStandardRgb(Vector3 pixel)
         {
-            CieLabPixelData labPixel = (CieLabPixelData)pixel;
+            CieLabColor labPixel = (CieLabColor)pixel;
             return labPixel.ToStandardRgb();
         }
     }
 
-    internal struct CieLabPixelData
+    internal struct CieLabColor
     {
         public float L;
         public float a;
         public float b;
 
-        public static explicit operator Vector3(CieLabPixelData source)
+        public static explicit operator Vector3(CieLabColor source)
         {
             return new Vector3(source.L, source.a, source.b);
         }
 
-        public static explicit operator CieLabPixelData(Vector3 source)
+        public static explicit operator CieLabColor(Vector3 source)
         {
-            return new CieLabPixelData
+            return new CieLabColor
             {
                 L = source.X,
                 a = source.Y,

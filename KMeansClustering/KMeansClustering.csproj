@@ -57,12 +57,12 @@
       <SubType>Designer</SubType>
     </ApplicationDefinition>
     <Compile Include="BitmapCluster.cs" />
-    <Compile Include="CieLuvPixelData.cs" />
-    <Compile Include="CieLabPixelData.cs" />
-    <Compile Include="CieXyzPixelData.cs" />
+    <Compile Include="CieLuvColor.cs" />
+    <Compile Include="CieLabColor.cs" />
+    <Compile Include="CieXyzColor.cs" />
     <Compile Include="ColorSpaceConversion.cs" />
-    <Compile Include="LinearRgbPixelData.cs" />
-    <Compile Include="StandardRgbPixelData.cs" />
+    <Compile Include="LinearRgbColor.cs" />
+    <Compile Include="StandardRgbColor.cs" />
     <Compile Include="WpfExtensions.cs" />
     <Page Include="MainWindow.xaml">
       <Generator>MSBuild:Compile</Generator>
@@ -79,7 +79,7 @@
   </ItemGroup>
   <ItemGroup>
     <Compile Include="StandardRgbBitmap.cs" />
-    <Compile Include="IPixelRepresentation.cs" />
+    <Compile Include="IColorSpace.cs" />
     <Compile Include="Properties\AssemblyInfo.cs">
       <SubType>Code</SubType>
     </Compile>

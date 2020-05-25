@@ -17,17 +17,17 @@ namespace KMeansClustering
             byte[] rawPixels = new byte[stride * convertedSource.PixelHeight];
             convertedSource.CopyPixels(rawPixels, stride, offset: 0);
 
-            StandardRgbPixelData[] pixelData = new StandardRgbPixelData[convertedSource.PixelWidth * convertedSource.PixelHeight];
+            StandardRgbColor[] pixels = new StandardRgbColor[convertedSource.PixelWidth * convertedSource.PixelHeight];
 
             for (int i = 0; i < rawPixels.Length; i += 4)
             {
                 int target = i / 4;
-                pixelData[target].B = rawPixels[i];
-                pixelData[target].G = rawPixels[i + 1];
-                pixelData[target].R = rawPixels[i + 2];
+                pixels[target].B = rawPixels[i];
+                pixels[target].G = rawPixels[i + 1];
+                pixels[target].R = rawPixels[i + 2];
             }
 
-            return new StandardRgbBitmap(pixelData, bitmap.PixelWidth, bitmap.PixelHeight, bitmap.DpiX, bitmap.DpiY);
+            return new StandardRgbBitmap(pixels, bitmap.PixelWidth, bitmap.PixelHeight, bitmap.DpiX, bitmap.DpiY);
         }
 
         public static BitmapSource ToBitmapSource(this StandardRgbBitmap bitmap)
@@ -47,7 +47,7 @@ namespace KMeansClustering
             return BitmapSource.Create(bitmap.Width, bitmap.Height, bitmap.DpiX, bitmap.DpiY, PixelFormats.Bgra32, null, rawPixels, stride);
         }
 
-        public static Color ToWindowsColor(this StandardRgbPixelData pixel)
+        public static Color ToWindowsColor(this StandardRgbColor pixel)
         {
             return Color.FromRgb(pixel.R, pixel.G, pixel.B);
         }
