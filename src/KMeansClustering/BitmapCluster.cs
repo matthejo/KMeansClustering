@@ -10,20 +10,21 @@ namespace KMeansClustering
         private const double Epsilon = 0.00001;
 
         private readonly IColorSpace colorSpace;
-        private readonly Vector3[] pixels;
 
+        private readonly StandardRgbColor[] originalPixels;
         private readonly int[] pixelClusters;
-        private Vector3[] clusterMeans;
         private readonly int[] clusterWeights;
+        private Vector3[] clusterMeans;
+        private Vector3[] pixels;
 
         public int[] ClusterWeights => clusterWeights;
         public StandardRgbColor[] ClusterMeans => clusterMeans.Select(p => colorSpace.ConvertToStandardRgb(p)).ToArray();
 
         public BitmapCluster(StandardRgbColor[] pixels, IColorSpace colorSpace, Vector3[] initialClusterSeeds)
         {
+            this.originalPixels = pixels;
             this.colorSpace = colorSpace;
             this.pixelClusters = new int[pixels.Length];
-            this.pixels = ConvertToColorSpace(pixels, colorSpace);
             this.clusterMeans = initialClusterSeeds;
             if (this.clusterMeans != null)
             {
@@ -86,6 +87,8 @@ namespace KMeansClustering
             return Task.Run(() =>
             {
                 int iterationCount = 0;
+
+                this.pixels = ConvertToColorSpace(this.originalPixels, colorSpace);
 
                 if (clusterMeans == null)
                 {
