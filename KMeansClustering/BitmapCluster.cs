@@ -22,6 +22,9 @@ namespace KMeansClustering
         private TPixelData[] clusterMeans;
         private readonly int[] clusterWeights;
 
+        public int[] ClusterWeights => clusterWeights;
+        public StandardRgbPixelData[] ClusterMeans => clusterMeans.Select(p => pixelRepresentation.ConvertToStandardRgb(p)).ToArray();
+
         public BitmapCluster(StandardRgbPixelData[] pixels, TPixelRepresentation pixelRepresentation, TPixelData[] initialClusterSeeds)
         {
             this.pixels = pixels;

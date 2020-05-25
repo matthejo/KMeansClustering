@@ -72,11 +72,14 @@ namespace KMeansClustering
             {
                 image.Source = null;
             }
+            RGBColorSlices.Children.Clear();
+            CIEXYZColorSlices.Children.Clear();
+            CIELabColorSlices.Children.Clear();
 
             await Task.WhenAll(
-                UpdateGroup<StandardRgbPixelRepresentation, StandardRgbPixelData>(clusters, sourceBitmap, PixelRepresentations.Rgb, RGBImageGrid),
-                UpdateGroup<CieXyzPixelRepresentation, CieXyzPixelData>(clusters, sourceBitmap, PixelRepresentations.CieXyz, CIEXYZImageGrid),
-                UpdateGroup<CieLabPixelRepresentation, CieLabPixelData>(clusters, sourceBitmap, PixelRepresentations.CieLab, CIELABImageGrid)
+                UpdateGroup<StandardRgbPixelRepresentation, StandardRgbPixelData>(clusters, sourceBitmap, PixelRepresentations.Rgb, RGBImageGrid, RGBColorSlices),
+                UpdateGroup<CieXyzPixelRepresentation, CieXyzPixelData>(clusters, sourceBitmap, PixelRepresentations.CieXyz, CIEXYZImageGrid, CIEXYZColorSlices),
+                UpdateGroup<CieLabPixelRepresentation, CieLabPixelData>(clusters, sourceBitmap, PixelRepresentations.CieLab, CIELABImageGrid, CIELabColorSlices)
                 );
 
             timer.Stop();
@@ -85,27 +88,44 @@ namespace KMeansClustering
 
         }
 
-        private async Task UpdateGroup<TPixelRepresentation, TPixelData>(int clusters, StandardRgbBitmap sourceBitmap, TPixelRepresentation pixelRepresentation, Panel parent)
+        private async Task UpdateGroup<TPixelRepresentation, TPixelData>(int clusters, StandardRgbBitmap sourceBitmap, TPixelRepresentation pixelRepresentation, Panel parent, Grid colorSlices = null)
             where TPixelData : struct
             where TPixelRepresentation : IPixelRepresentation<TPixelData>
         {
-            int currentClusterCount = Math.Max(clusters, 16);
-            var targetBitmap = new BitmapCluster<TPixelRepresentation, TPixelData>(sourceBitmap.Pixels, pixelRepresentation, currentClusterCount);
             for (int targetIndex = 0; targetIndex < parent.Children.Count; targetIndex++)
             {
-                await targetBitmap.ClusterAsync(currentClusterCount == clusters ? 50 : 5);
+                int currentClusterCount = Math.Max(clusters, 16);
+                var targetBitmap = new BitmapCluster<TPixelRepresentation, TPixelData>(sourceBitmap.Pixels, pixelRepresentation, currentClusterCount);
+                await targetBitmap.ClusterAsync(5);
+                currentClusterCount = clusters;
+                var newSeedClusters = await targetBitmap.PickDifferentiatedClusters(currentClusterCount);
+                targetBitmap = new BitmapCluster<TPixelRepresentation, TPixelData>(sourceBitmap.Pixels, pixelRepresentation, newSeedClusters);
+                await targetBitmap.ClusterAsync(50);
                 ((Image)parent.Children[targetIndex]).Source = new StandardRgbBitmap(targetBitmap.Render(), sourceBitmap.Width, sourceBitmap.Height, sourceBitmap.DpiX, sourceBitmap.DpiY).ToBitmapSource();
 
-                if (currentClusterCount == clusters)
+                if (colorSlices != null)
                 {
-                    currentClusterCount = Math.Max(clusters, 16);
-                    targetBitmap = new BitmapCluster<TPixelRepresentation, TPixelData>(sourceBitmap.Pixels, pixelRepresentation, currentClusterCount);
-                }
-                else
-                {
-                    currentClusterCount = clusters;
-                    var newSeedClusters = await targetBitmap.PickDifferentiatedClusters(currentClusterCount);
-                    targetBitmap = new BitmapCluster<TPixelRepresentation, TPixelData>(sourceBitmap.Pixels, pixelRepresentation, newSeedClusters);
+                    var weights = targetBitmap.ClusterWeights;
+                    var colors = targetBitmap.ClusterMeans;
+
+                    var sortedByWeight = weights.Zip(colors, (w, c) => new { Weight = w, Color = c }).OrderByDescending(t => t.Weight).ToArray();
+
+                    colorSlices.Children.Clear();
+                    colorSlices.ColumnDefinitions.Clear();
+                    for (int i = 0; i < clusters; i++)
+                    {
+                        colorSlices.ColumnDefinitions.Add(new ColumnDefinition
+                        {
+                            Width = new GridLength(sortedByWeight[i].Weight, GridUnitType.Star)
+                        });
+                        var rectangle = new Rectangle
+                        {
+                            Fill = new SolidColorBrush(sortedByWeight[i].Color.ToWindowsColor()),
+                            Margin = new Thickness(2, 0, 0, 0)
+                        };
+                        Grid.SetColumn(rectangle, i);
+                        colorSlices.Children.Add(rectangle);
+                    }
                 }
             }
         }

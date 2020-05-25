@@ -51,5 +51,10 @@ namespace KMeansClustering
 
             return BitmapSource.Create(bitmap.Width, bitmap.Height, bitmap.DpiX, bitmap.DpiY, PixelFormats.Bgra32, null, rawPixels, stride);
         }
+
+        public static Color ToWindowsColor(this StandardRgbPixelData pixel)
+        {
+            return Color.FromRgb(pixel.R, pixel.G, pixel.B);
+        }
     }
 }

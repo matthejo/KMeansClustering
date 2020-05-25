@@ -27,33 +27,47 @@
 
         <Border Grid.Row="1" BorderBrush="LightGray" BorderThickness="1" Margin="8,0,0,0">
             <DockPanel LastChildFill="True">
-                <Label DockPanel.Dock="Top" Content="Original" />
+                <Border DockPanel.Dock="Top" Background="#EEEEEE">
+                    <Label Content="Original" FontSize="16" FontWeight="Bold" Margin="8,8,20,8"/>
+                </Border>
                 <Image x:Name="OriginalImage" Stretch="Uniform"  />
             </DockPanel>
         </Border>
         <Border Grid.Row="1" Grid.Column="1" BorderBrush="LightGray" BorderThickness="0,1,1,1" Margin="0,0,8,0">
             <DockPanel LastChildFill="True">
-                <Label DockPanel.Dock="Top" Content="RGB" />
-                <UniformGrid Rows="2" x:Name="RGBImageGrid">
-                    <Image Stretch="Uniform"  />
+                <Border DockPanel.Dock="Top" Background="#EEEEEE">
+                    <DockPanel LastChildFill="True">
+                        <Label Content="RGB" FontSize="16" FontWeight="Bold" DockPanel.Dock="Left" Width="100" Margin="8,8,20,8" />
+                        <Grid x:Name="RGBColorSlices" Margin="2" />
+                    </DockPanel>
+                </Border>
+                <UniformGrid Rows="1" x:Name="RGBImageGrid">
                     <Image Stretch="Uniform"  />
                 </UniformGrid>
             </DockPanel>
         </Border>
         <Border Grid.Row="2" Grid.Column="0" BorderBrush="LightGray" BorderThickness="1,0,1,1" Margin="8,0,0,8">
             <DockPanel LastChildFill="True">
-                <Label DockPanel.Dock="Top" Content="CIE XYZ" />
-                <UniformGrid Rows="2" x:Name="CIEXYZImageGrid">
-                    <Image Stretch="Uniform"  />
+                <Border DockPanel.Dock="Top" Background="#EEEEEE">
+                    <DockPanel LastChildFill="True">
+                        <Label Content="CIE XYZ" FontSize="16" FontWeight="Bold" DockPanel.Dock="Left" Width="100" Margin="8,8,20,8"  />
+                        <Grid x:Name="CIEXYZColorSlices" Margin="2" />
+                    </DockPanel>
+                </Border>
+                <UniformGrid Rows="1" x:Name="CIEXYZImageGrid">
                     <Image Stretch="Uniform"  />
                 </UniformGrid>
             </DockPanel>
         </Border>
         <Border Grid.Row="2" Grid.Column="1" BorderBrush="LightGray" BorderThickness="0,0,1,1" Margin="0,0,8,8">
             <DockPanel LastChildFill="True">
-                <Label DockPanel.Dock="Top" Content="CIE L*a*b*" />
-                <UniformGrid Rows="2" x:Name="CIELABImageGrid">
-                    <Image Stretch="Uniform"  />
+                <Border DockPanel.Dock="Top" Background="#EEEEEE">
+                    <DockPanel LastChildFill="True">
+                        <Label Content="CIE L*a*b*" FontSize="16" FontWeight="Bold" DockPanel.Dock="Left" Width="100" Margin="8,8,20,8"/>
+                        <Grid x:Name="CIELabColorSlices" Margin="2" />
+                    </DockPanel>
+                </Border>
+                <UniformGrid Rows="1" x:Name="CIELABImageGrid">
                     <Image Stretch="Uniform"  />
                 </UniformGrid>
             </DockPanel>
