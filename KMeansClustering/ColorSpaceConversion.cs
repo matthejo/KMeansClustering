@@ -1,22 +1,18 @@
 ﻿using System;
-using System.Collections.Generic;
-using System.Linq;
 using System.Numerics;
-using System.Text;
-using System.Threading.Tasks;
 
 namespace KMeansClustering
 {
     internal static class ColorSpaceConversion
     {
-        private static class CieLab
+        private static class CieConstants
         {
-            public const double Xn = 95.0489;
-            public const double Yn = 100;
-            public const double Zn = 108.8840;
-            public const double delta = 6.0 / 29.0;
-            public const double uN = 0.2009;
-            public const double vN = 0.4610;
+            public const float Xn = 95.0489f;
+            public const float Yn = 100.0f;
+            public const float Zn = 108.8840f;
+            public const float delta = 6.0f / 29.0f;
+            public const float uN = 0.2009f;
+            public const float vN = 0.4610f;
         }
 
         private static readonly Matrix4x4 linearRgbToCieTransform = Matrix4x4.Transpose(new Matrix4x4
@@ -157,9 +153,9 @@ namespace KMeansClustering
 
         public static CieXyzPixelData ToCieXyz(this CieLabPixelData source)
         {
-            double X = CieLab.Xn * fInverse((source.L + 16.0) / 116.0 + source.a / 500.0);
-            double Y = CieLab.Yn * fInverse((source.L + 16.0) / 116.0);
-            double Z = CieLab.Zn * fInverse((source.L + 16.0) / 116.0 - source.b / 200.0);
+            float X = CieConstants.Xn * fInverse((source.L + 16.0f) / 116.0f + source.a / 500.0f);
+            float Y = CieConstants.Yn * fInverse((source.L + 16.0f) / 116.0f);
+            float Z = CieConstants.Zn * fInverse((source.L + 16.0f) / 116.0f - source.b / 200.0f);
 
             return new CieXyzPixelData
             {
@@ -168,20 +164,20 @@ namespace KMeansClustering
                 Z = Z
             };
 
-            double fInverse(double t)
+            float fInverse(float t)
             {
-                return t > CieLab.delta ? t * t * t : 3 * CieLab.delta * CieLab.delta * (t - 4.0 / 29.0);
+                return t > CieConstants.delta ? t * t * t : 3 * CieConstants.delta * CieConstants.delta * (t - 4.0f / 29.0f);
             }
         }
 
         public static CieXyzPixelData ToCieXyz(this CieLuvPixelData source)
         {
-            double uPrime = source.u / (13.0 * source.L) + CieLab.uN;
-            double vPrime = source.v / (13.0 * source.L) + CieLab.vN;
+            float uPrime = source.u / (13.0f * source.L) + CieConstants.uN;
+            float vPrime = source.v / (13.0f * source.L) + CieConstants.vN;
 
-            double Y = source.L <= 8 ? CieLab.Yn * source.L * (3.0 / 29.0) * (3.0 / 29.0) * (3.0 / 29.0) : CieLab.Yn * Math.Pow((source.L + 16.0) / 116.0, 3);
-            double X = Y * (9.0 * uPrime) / (4.0 * vPrime);
-            double Z = Y * (12.0 - 3 * uPrime - 20.0 * vPrime) / (4.0 * vPrime);
+            float Y = source.L <= 8 ? CieConstants.Yn * source.L * (3.0f / 29.0f) * (3.0f / 29.0f) * (3.0f / 29.0f) : CieConstants.Yn * (float)Math.Pow((source.L + 16.0) / 116.0, 3);
+            float X = Y * (9.0f * uPrime) / (4.0f * vPrime);
+            float Z = Y * (12.0f - 3 * uPrime - 20.0f * vPrime) / (4.0f * vPrime);
 
             return new CieXyzPixelData
             {
@@ -203,9 +199,9 @@ namespace KMeansClustering
 
         public static CieLabPixelData ToCieLab(this CieXyzPixelData source)
         {
-            double L = 116.0 * f(source.Y / CieLab.Yn) - 16.0;
-            double a = 500.0 * (f(source.X / CieLab.Xn) - f(source.Y / CieLab.Yn));
-            double b = 200.0 * (f(source.Y / CieLab.Yn) - f(source.Z / CieLab.Zn));
+            float L = 116.0f * f(source.Y / CieConstants.Yn) - 16.0f;
+            float a = 500.0f * (f(source.X / CieConstants.Xn) - f(source.Y / CieConstants.Yn));
+            float b = 200.0f * (f(source.Y / CieConstants.Yn) - f(source.Z / CieConstants.Zn));
 
             return new CieLabPixelData
             {
@@ -214,9 +210,9 @@ namespace KMeansClustering
                 b = b
             };
 
-            double f(double t)
+            float f(float t)
             {
-                return t > CieLab.delta * CieLab.delta * CieLab.delta ? Math.Pow(t, 1.0 / 3.0) : t / (3 * CieLab.delta * CieLab.delta) + 4.0 / 29.0;
+                return t > CieConstants.delta * CieConstants.delta * CieConstants.delta ? (float)Math.Pow(t, 1.0 / 3.0) : t / (3 * CieConstants.delta * CieConstants.delta) + 4.0f / 29.0f;
             }
         }
 
@@ -242,15 +238,15 @@ namespace KMeansClustering
 
         public static CieLuvPixelData ToCieLuv(this CieXyzPixelData source)
         {
-            const double inflectionPoint = (6.0 / 29.0) * (6.0 / 29.0) * (6.0 / 29.0);
-            double inflectionTest = source.Y / CieLab.Yn;
-            double denominator = (source.X + 15.0 * source.Y + 3.0 * source.Z);
-            double uPrime = denominator == 0 ? 0 : (4.0 * source.X) / denominator;
-            double vPrime = denominator == 0 ? 0 : (9.0 * source.Y) / denominator;
+            const float inflectionPoint = (6.0f / 29.0f) * (6.0f / 29.0f) * (6.0f / 29.0f);
+            float inflectionTest = source.Y / CieConstants.Yn;
+            float denominator = (source.X + 15.0f * source.Y + 3.0f * source.Z);
+            float uPrime = denominator == 0.0f ? 0.0f : (4.0f * source.X) / denominator;
+            float vPrime = denominator == 0.0f ? 0.0f : (9.0f * source.Y) / denominator;
 
-            double L = inflectionTest <= inflectionPoint ? (29.0 / 3.0) * (29.0 / 3.0) * (29.0 / 3.0) * source.Y / CieLab.Yn : 116.0 * Math.Pow(source.Y / CieLab.Yn, 1.0 / 3.0) - 16.0;
-            double u = 13.0 * L * (uPrime - CieLab.uN);
-            double v = 13.0 * L * (vPrime - CieLab.vN);
+            float L = inflectionTest <= inflectionPoint ? (29.0f / 3.0f) * (29.0f / 3.0f) * (29.0f / 3.0f) * source.Y / CieConstants.Yn : 116.0f * (float)Math.Pow(source.Y / CieConstants.Yn, 1.0f / 3.0f) - 16.0f;
+            float u = 13.0f * L * (uPrime - CieConstants.uN);
+            float v = 13.0f * L * (vPrime - CieConstants.vN);
 
             return new CieLuvPixelData
             {

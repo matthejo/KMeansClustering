@@ -1,31 +1,26 @@
 ﻿using System;
-using System.Collections.Generic;
 using System.Linq;
 using System.Numerics;
-using System.Runtime.InteropServices;
-using System.Text;
 using System.Threading.Tasks;
-using System.Windows.Media;
-using System.Windows.Media.Imaging;
 
 namespace KMeansClustering
 {
-    internal sealed class BitmapCluster<TPixelRepresentation, TPixelData>
-        where TPixelData : struct
-        where TPixelRepresentation : IPixelRepresentation<TPixelData>
+    internal sealed class BitmapCluster
     {
+        private const double Epsilon = 0.00001;
+
         private readonly StandardRgbPixelData[] pixels;
-        private readonly TPixelRepresentation pixelRepresentation;
-        private readonly TPixelData[] pixelData;
+        private readonly IPixelRepresentation pixelRepresentation;
+        private readonly Vector3[] pixelData;
 
         private readonly int[] pixelClusters;
-        private TPixelData[] clusterMeans;
+        private Vector3[] clusterMeans;
         private readonly int[] clusterWeights;
 
         public int[] ClusterWeights => clusterWeights;
         public StandardRgbPixelData[] ClusterMeans => clusterMeans.Select(p => pixelRepresentation.ConvertToStandardRgb(p)).ToArray();
 
-        public BitmapCluster(StandardRgbPixelData[] pixels, TPixelRepresentation pixelRepresentation, TPixelData[] initialClusterSeeds)
+        public BitmapCluster(StandardRgbPixelData[] pixels, IPixelRepresentation pixelRepresentation, Vector3[] initialClusterSeeds)
         {
             this.pixels = pixels;
             this.pixelRepresentation = pixelRepresentation;
@@ -38,7 +33,7 @@ namespace KMeansClustering
             }
         }
 
-        public BitmapCluster(StandardRgbPixelData[] pixels, TPixelRepresentation pixelRepresentation, int clusterCount)
+        public BitmapCluster(StandardRgbPixelData[] pixels, IPixelRepresentation pixelRepresentation, int clusterCount)
             : this(pixels, pixelRepresentation, null)
         {
             this.clusterWeights = new int[clusterCount];
@@ -49,16 +44,16 @@ namespace KMeansClustering
             return pixelClusters.Select(i => pixelRepresentation.ConvertToStandardRgb(clusterMeans[i])).ToArray();
         }
 
-        private static TPixelData[] ConvertToPixelData(StandardRgbPixelData[] pixels, TPixelRepresentation pixelRepresentation)
+        private static Vector3[] ConvertToPixelData(StandardRgbPixelData[] pixels, IPixelRepresentation pixelRepresentation)
         {
             return pixels.Select(p => pixelRepresentation.ConvertFromStandardRgb(p)).ToArray();
         }
 
-        public Task<TPixelData[]> PickDifferentiatedClusters(int subsetCount)
+        public Task<Vector3[]> ChooseDifferentiatedClusters(int subsetCount)
         {
             return Task.Run(() =>
             {
-                TPixelData[] differentiatedClusters = new TPixelData[subsetCount];
+                Vector3[] differentiatedClusters = new Vector3[subsetCount];
                 differentiatedClusters[0] = this.clusterMeans[this.clusterWeights.Select((w, i) => new { Index = i, Weight = w }).OrderByDescending(t => t.Weight).Select(t => t.Index).First()];
 
                 for (int differentClusterIndex = 1; differentClusterIndex < differentiatedClusters.Length; differentClusterIndex++)
@@ -71,7 +66,7 @@ namespace KMeansClustering
                         double minDistance = double.MaxValue;
                         for (int previousDifferentClusterIndex = 0; previousDifferentClusterIndex < differentClusterIndex; previousDifferentClusterIndex++)
                         {
-                            minDistance = Math.Min(minDistance, pixelRepresentation.DistanceSquared(clusterMeans[clusterIndex], differentiatedClusters[previousDifferentClusterIndex]));
+                            minDistance = Math.Min(minDistance, Vector3.DistanceSquared(clusterMeans[clusterIndex], differentiatedClusters[previousDifferentClusterIndex]));
                         }
 
                         if (minDistance > highestDistance)
@@ -113,7 +108,7 @@ namespace KMeansClustering
             });
         }
 
-        private bool IterateNextCluster(TPixelData[] clusterMeans, int[] clusterAssigments)
+        private bool IterateNextCluster(Vector3[] clusterMeans, int[] clusterAssigments)
         {
             PixelDataMeanAccumulator[] accumulatedSamples = new PixelDataMeanAccumulator[clusterMeans.Length];
             for (int i = 0; i < clusterWeights.Length; i++)
@@ -128,7 +123,7 @@ namespace KMeansClustering
 
                 for (int clusterIndex = 0; clusterIndex < clusterMeans.Length; clusterIndex++)
                 {
-                    double distance = pixelRepresentation.DistanceSquared(clusterMeans[clusterIndex], pixelData[pixelIndex]);
+                    double distance = Vector3.DistanceSquared(clusterMeans[clusterIndex], pixelData[pixelIndex]);
                     if (distance < bestDistance)
                     {
                         bestCluster = clusterIndex;
@@ -138,21 +133,21 @@ namespace KMeansClustering
 
                 clusterAssigments[pixelIndex] = bestCluster;
                 clusterWeights[bestCluster]++;
-                pixelRepresentation.AddSample(ref accumulatedSamples[bestCluster], pixelData[pixelIndex]);
+                accumulatedSamples[bestCluster].AddSample(pixelData[pixelIndex]);
             }
 
             bool isComplete = true;
             for (int i = 0; i < clusterMeans.Length; i++)
             {
-                TPixelData newValue = pixelRepresentation.GetAverage(accumulatedSamples[i]);
-                isComplete = isComplete && pixelRepresentation.Equals(newValue, clusterMeans[i]);
+                Vector3 newValue = accumulatedSamples[i].GetAverage();
+                isComplete = isComplete && AreNearlyEqual(newValue, clusterMeans[i]);
                 clusterMeans[i] = newValue;
             }
 
             return isComplete;
         }
 
-        private void AssignPixelsFromClusters(TPixelData[] clusterMeans, int[] clusterAssigments)
+        private void AssignPixelsFromClusters(Vector3[] clusterMeans, int[] clusterAssigments)
         {
             for (int pixelIndex = 0; pixelIndex < pixelData.Length; pixelIndex++)
             {
@@ -160,10 +155,18 @@ namespace KMeansClustering
             }
         }
 
-        private static TPixelData[] CreateRandomSeeding(TPixelData[] pixelData, TPixelRepresentation pixelRepresentation, int clusterCount)
+        private static bool AreNearlyEqual(Vector3 a, Vector3 b)
+        {
+            Vector3 delta = Vector3.Abs(a - b);
+            return delta.X < Epsilon &&
+                delta.Y < Epsilon &&
+                delta.Z < Epsilon;
+        }
+
+        private static Vector3[] CreateRandomSeeding(Vector3[] pixelData, IPixelRepresentation pixelRepresentation, int clusterCount)
         {
             Random random = new Random();
-            TPixelData[] clusterMeans = new TPixelData[clusterCount];
+            Vector3[] clusterMeans = new Vector3[clusterCount];
             // Randomly choose a first cluster point
             clusterMeans[0] = pixelData[random.Next(pixelData.Length)];
 
@@ -180,7 +183,7 @@ namespace KMeansClustering
                     double closestDistance = double.MaxValue;
                     for (int previousClusterIndex = 0; previousClusterIndex < clusterIndex; previousClusterIndex++)
                     {
-                        closestDistance = Math.Min(closestDistance, pixelRepresentation.DistanceSquared(clusterMeans[previousClusterIndex], pixelData[pixelIndex]));
+                        closestDistance = Math.Min(closestDistance, Vector3.DistanceSquared(clusterMeans[previousClusterIndex], pixelData[pixelIndex]));
                     }
                     weightedProbabilities[pixelIndex] = closestDistance;
                     totalDistances += closestDistance;
@@ -199,6 +202,23 @@ namespace KMeansClustering
             }
 
             return clusterMeans;
+        }
+
+        private struct PixelDataMeanAccumulator
+        {
+            private Vector3 Total;
+            private int Count;
+
+            public void AddSample(Vector3 color)
+            {
+                Total += color;
+                Count++;
+            }
+
+            public Vector3 GetAverage()
+            {
+                return Total / Count;
+            }
         }
     }
 }

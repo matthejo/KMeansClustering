@@ -1,85 +1,41 @@
 ﻿using System;
-using System.Collections.Generic;
-using System.Linq;
+using System.Numerics;
 using System.Runtime.InteropServices;
-using System.Text;
-using System.Threading.Tasks;
 
 namespace KMeansClustering
 {
-    internal sealed class StandardRgbPixelRepresentation : IPixelRepresentation<StandardRgbPixelData>
+    internal sealed class StandardRgbPixelRepresentation : IPixelRepresentation
     {
-        public void AddSample(ref PixelDataMeanAccumulator accumulator, StandardRgbPixelData sample)
+        public Vector3 ConvertFromStandardRgb(StandardRgbPixelData pixel)
         {
-            accumulator.AddSample(sample.R, sample.G, sample.B);
+            return (Vector3)pixel;
         }
 
-        public StandardRgbPixelData ConvertFromStandardRgb(StandardRgbPixelData pixel)
+        public StandardRgbPixelData ConvertToStandardRgb(Vector3 pixel)
         {
-            return pixel;
-        }
-
-        public StandardRgbPixelData ConvertToStandardRgb(StandardRgbPixelData pixel)
-        {
-            return pixel;
-        }
-
-        public double DistanceSquared(StandardRgbPixelData a, StandardRgbPixelData b)
-        {
-            double deltaR = a.R - b.R;
-            double deltaG = a.G - b.G;
-            double deltaB = a.B - b.B;
-
-            return deltaR * deltaR + deltaG * deltaG + deltaB * deltaB;
-        }
-
-        public bool Equals(StandardRgbPixelData a, StandardRgbPixelData b)
-        {
-            return a == b;
-        }
-
-        public StandardRgbPixelData GetAverage(PixelDataMeanAccumulator accumulator)
-        {
-            accumulator.GetAverage(out double r, out double g, out double b);
-            return new StandardRgbPixelData
-            {
-                R = (byte)Math.Round(r),
-                G = (byte)Math.Round(g),
-                B = (byte)Math.Round(b),
-            };
+            return (StandardRgbPixelData)pixel;
         }
     }
 
-    [StructLayout(LayoutKind.Sequential)]
     internal struct StandardRgbPixelData
     {
         public byte R;
         public byte G;
         public byte B;
 
-        public override bool Equals(object obj)
+        public static explicit operator Vector3(StandardRgbPixelData source)
         {
-            if (!(obj is StandardRgbPixelData other))
+            return new Vector3(source.R, source.G, source.B);
+        }
+
+        public static explicit operator StandardRgbPixelData(Vector3 source)
+        {
+            return new StandardRgbPixelData
             {
-                return false;
-            }
-
-            return this == other;
-        }
-
-        public override int GetHashCode()
-        {
-            return R << 16 | G << 8 | B;
-        }
-
-        public static bool operator ==(StandardRgbPixelData a, StandardRgbPixelData b)
-        {
-            return a.R == b.R && a.G == b.G && a.B == b.B;
-        }
-
-        public static bool operator !=(StandardRgbPixelData a, StandardRgbPixelData b)
-        {
-            return !(a == b);
+                R = (byte)Math.Round(source.X),
+                G = (byte)Math.Round(source.Y),
+                B = (byte)Math.Round(source.Z)
+            };
         }
     }
 }

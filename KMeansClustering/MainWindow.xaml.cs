@@ -76,17 +76,15 @@ namespace KMeansClustering
             CIELabColorSlices.Children.Clear();
 
             await Task.WhenAll(
-                UpdateGroup<StandardRgbPixelRepresentation, StandardRgbPixelData>(clusters, sourceBitmap, PixelRepresentations.Rgb, RGBImageGrid, RGBColorSlices, RGBStatus),
-                UpdateGroup<CieLuvPixelRepresentation, CieLuvPixelData>(clusters, sourceBitmap, PixelRepresentations.CieLuv, CIELUVImageGrid, CIELUVColorSlices, CIELuvStatus),
-                UpdateGroup<CieLabPixelRepresentation, CieLabPixelData>(clusters, sourceBitmap, PixelRepresentations.CieLab, CIELABImageGrid, CIELabColorSlices, CIELabStatus)
+                UpdateGroup(clusters, sourceBitmap, PixelRepresentations.Rgb, RGBImageGrid, RGBColorSlices, RGBStatus),
+                UpdateGroup(clusters, sourceBitmap, PixelRepresentations.CieLuv, CIELUVImageGrid, CIELUVColorSlices, CIELuvStatus),
+                UpdateGroup(clusters, sourceBitmap, PixelRepresentations.CieLab, CIELABImageGrid, CIELabColorSlices, CIELabStatus)
                 );
 
             this.IsEnabled = true;
         }
 
-        private async Task UpdateGroup<TPixelRepresentation, TPixelData>(int clusters, StandardRgbBitmap sourceBitmap, TPixelRepresentation pixelRepresentation, Panel parent, Grid colorSlices, Label label)
-            where TPixelData : struct
-            where TPixelRepresentation : IPixelRepresentation<TPixelData>
+        private async Task UpdateGroup(int clusters, StandardRgbBitmap sourceBitmap, IPixelRepresentation pixelRepresentation, Panel parent, Grid colorSlices, Label label)
         {
             EventHandler onTick = (sender, e) =>
             {
@@ -98,11 +96,11 @@ namespace KMeansClustering
             for (int targetIndex = 0; targetIndex < parent.Children.Count; targetIndex++)
             {
                 int currentClusterCount = Math.Max(clusters, 16);
-                var targetBitmap = new BitmapCluster<TPixelRepresentation, TPixelData>(sourceBitmap.Pixels, pixelRepresentation, currentClusterCount);
+                var targetBitmap = new BitmapCluster(sourceBitmap.Pixels, pixelRepresentation, currentClusterCount);
                 await targetBitmap.ClusterAsync(5);
                 currentClusterCount = clusters;
-                var newSeedClusters = await targetBitmap.PickDifferentiatedClusters(currentClusterCount);
-                targetBitmap = new BitmapCluster<TPixelRepresentation, TPixelData>(sourceBitmap.Pixels, pixelRepresentation, newSeedClusters);
+                var newSeedClusters = await targetBitmap.ChooseDifferentiatedClusters(currentClusterCount);
+                targetBitmap = new BitmapCluster(sourceBitmap.Pixels, pixelRepresentation, newSeedClusters);
                 await targetBitmap.ClusterAsync(50);
                 ((Image)parent.Children[targetIndex]).Source = new StandardRgbBitmap(targetBitmap.Render(), sourceBitmap.Width, sourceBitmap.Height, sourceBitmap.DpiX, sourceBitmap.DpiY).ToBitmapSource();
 

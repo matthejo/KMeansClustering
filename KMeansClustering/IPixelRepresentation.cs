@@ -1,52 +1,17 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Runtime.InteropServices;
-using System.Text;
-using System.Threading.Tasks;
+﻿using System.Numerics;
 
 namespace KMeansClustering
 {
     internal static class PixelRepresentations
     {
         public static readonly StandardRgbPixelRepresentation Rgb = new StandardRgbPixelRepresentation();
-        public static readonly CieXyzPixelRepresentation CieXyz = new CieXyzPixelRepresentation();
         public static readonly CieLabPixelRepresentation CieLab = new CieLabPixelRepresentation();
         public static readonly CieLuvPixelRepresentation CieLuv = new CieLuvPixelRepresentation();
     }
 
-    internal interface IPixelRepresentation<TPixelData>
+    internal interface IPixelRepresentation
     {
-        double DistanceSquared(TPixelData a, TPixelData b);
-        bool Equals(TPixelData a, TPixelData b);
-        TPixelData ConvertFromStandardRgb(StandardRgbPixelData pixel);
-        StandardRgbPixelData ConvertToStandardRgb(TPixelData pixel);
-        void AddSample(ref PixelDataMeanAccumulator accumulator, TPixelData sample);
-        TPixelData GetAverage(PixelDataMeanAccumulator accumulator);
-    }
-
-    internal struct PixelDataMeanAccumulator
-    {
-        public double XTotal;
-        public double YTotal;
-        public double ZTotal;
-        public double WTotal;
-        public int Count;
-
-        public void AddSample(double x, double y, double z, double w = 0)
-        {
-            XTotal += x;
-            YTotal += y;
-            ZTotal += z;
-            WTotal += w;
-            Count++;
-        }
-
-        public void GetAverage(out double x, out double y, out double z)
-        {
-            x = XTotal / Count;
-            y = YTotal / Count;
-            z = ZTotal / Count;
-        }
+        Vector3 ConvertFromStandardRgb(StandardRgbPixelData pixel);
+        StandardRgbPixelData ConvertToStandardRgb(Vector3 pixel);
     }
 }
