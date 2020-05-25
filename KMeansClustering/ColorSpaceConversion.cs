@@ -15,6 +15,8 @@ namespace KMeansClustering
             public const double Yn = 100;
             public const double Zn = 108.8840;
             public const double delta = 6.0 / 29.0;
+            public const double uN = 0.2009;
+            public const double vN = 0.4610;
         }
 
         private static readonly Matrix4x4 linearRgbToCieTransform = Matrix4x4.Transpose(new Matrix4x4
@@ -88,6 +90,11 @@ namespace KMeansClustering
             return source.ToCieXyz().ToStandardRgb();
         }
 
+        public static StandardRgbPixelData ToStandardRgb(this CieLuvPixelData source)
+        {
+            return source.ToCieXyz().ToStandardRgb();
+        }
+
         public static LinearRgbPixelData ToLinearRgb(this StandardRgbPixelData source)
         {
             double sR = source.R / 255.0;
@@ -121,6 +128,11 @@ namespace KMeansClustering
         }
 
         public static LinearRgbPixelData ToLinearRgb(this CieLabPixelData source)
+        {
+            return source.ToCieXyz().ToLinearRgb();
+        }
+
+        public static LinearRgbPixelData ToLinearRgb(this CieLuvPixelData source)
         {
             return source.ToCieXyz().ToLinearRgb();
         }
@@ -162,6 +174,23 @@ namespace KMeansClustering
             }
         }
 
+        public static CieXyzPixelData ToCieXyz(this CieLuvPixelData source)
+        {
+            double uPrime = source.u / (13.0 * source.L) + CieLab.uN;
+            double vPrime = source.v / (13.0 * source.L) + CieLab.vN;
+
+            double Y = source.L <= 8 ? CieLab.Yn * source.L * (3.0 / 29.0) * (3.0 / 29.0) * (3.0 / 29.0) : CieLab.Yn * Math.Pow((source.L + 16.0) / 116.0, 3);
+            double X = Y * (9.0 * uPrime) / (4.0 * vPrime);
+            double Z = Y * (12.0 - 3 * uPrime - 20.0 * vPrime) / (4.0 * vPrime);
+
+            return new CieXyzPixelData
+            {
+                X = X,
+                Y = Y,
+                Z = Z
+            };
+        }
+
         public static CieLabPixelData ToCieLab(this StandardRgbPixelData source)
         {
             return source.ToLinearRgb().ToCieLab();
@@ -189,6 +218,46 @@ namespace KMeansClustering
             {
                 return t > CieLab.delta * CieLab.delta * CieLab.delta ? Math.Pow(t, 1.0 / 3.0) : t / (3 * CieLab.delta * CieLab.delta) + 4.0 / 29.0;
             }
+        }
+
+        public static CieLabPixelData ToCieLab(this CieLuvPixelData source)
+        {
+            return source.ToCieXyz().ToCieLab();
+        }
+
+        public static CieLuvPixelData ToCieLuv(this StandardRgbPixelData source)
+        {
+            return source.ToLinearRgb().ToCieLuv();
+        }
+
+        public static CieLuvPixelData ToCieLuv(this LinearRgbPixelData source)
+        {
+            return source.ToCieXyz().ToCieLuv();
+        }
+
+        public static CieLuvPixelData ToCieLuv(this CieLabPixelData source)
+        {
+            return source.ToCieXyz().ToCieLuv();
+        }
+
+        public static CieLuvPixelData ToCieLuv(this CieXyzPixelData source)
+        {
+            const double inflectionPoint = (6.0 / 29.0) * (6.0 / 29.0) * (6.0 / 29.0);
+            double inflectionTest = source.Y / CieLab.Yn;
+            double denominator = (source.X + 15.0 * source.Y + 3.0 * source.Z);
+            double uPrime = denominator == 0 ? 0 : (4.0 * source.X) / denominator;
+            double vPrime = denominator == 0 ? 0 : (9.0 * source.Y) / denominator;
+
+            double L = inflectionTest <= inflectionPoint ? (29.0 / 3.0) * (29.0 / 3.0) * (29.0 / 3.0) * source.Y / CieLab.Yn : 116.0 * Math.Pow(source.Y / CieLab.Yn, 1.0 / 3.0) - 16.0;
+            double u = 13.0 * L * (uPrime - CieLab.uN);
+            double v = 13.0 * L * (vPrime - CieLab.vN);
+
+            return new CieLuvPixelData
+            {
+                L = L,
+                u = u,
+                v = v
+            };
         }
     }
 }

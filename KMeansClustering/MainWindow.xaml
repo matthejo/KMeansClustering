@@ -50,11 +50,11 @@
             <DockPanel LastChildFill="True">
                 <Border DockPanel.Dock="Top" Background="#EEEEEE">
                     <DockPanel LastChildFill="True">
-                        <Label Content="CIE XYZ" FontSize="16" FontWeight="Bold" DockPanel.Dock="Left" Width="100" Margin="8,8,20,8"  />
-                        <Grid x:Name="CIEXYZColorSlices" Margin="2" />
+                        <Label Content="CIE L*u*v*" FontSize="16" FontWeight="Bold" DockPanel.Dock="Left" Width="100" Margin="8,8,20,8"  />
+                        <Grid x:Name="CIELUVColorSlices" Margin="2" />
                     </DockPanel>
                 </Border>
-                <UniformGrid Rows="1" x:Name="CIEXYZImageGrid">
+                <UniformGrid Rows="1" x:Name="CIELUVImageGrid">
                     <Image Stretch="Uniform"  />
                 </UniformGrid>
             </DockPanel>

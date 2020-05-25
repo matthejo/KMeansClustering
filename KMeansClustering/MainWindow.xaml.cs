@@ -64,7 +64,7 @@ namespace KMeansClustering
             {
                 image.Source = null;
             }
-            foreach (Image image in CIEXYZImageGrid.Children.Cast<Image>())
+            foreach (Image image in CIELUVImageGrid.Children.Cast<Image>())
             {
                 image.Source = null;
             }
@@ -73,12 +73,12 @@ namespace KMeansClustering
                 image.Source = null;
             }
             RGBColorSlices.Children.Clear();
-            CIEXYZColorSlices.Children.Clear();
+            CIELUVColorSlices.Children.Clear();
             CIELabColorSlices.Children.Clear();
 
             await Task.WhenAll(
                 UpdateGroup<StandardRgbPixelRepresentation, StandardRgbPixelData>(clusters, sourceBitmap, PixelRepresentations.Rgb, RGBImageGrid, RGBColorSlices),
-                UpdateGroup<CieXyzPixelRepresentation, CieXyzPixelData>(clusters, sourceBitmap, PixelRepresentations.CieXyz, CIEXYZImageGrid, CIEXYZColorSlices),
+                UpdateGroup<CieLuvPixelRepresentation, CieLuvPixelData>(clusters, sourceBitmap, PixelRepresentations.CieLuv, CIELUVImageGrid, CIELUVColorSlices),
                 UpdateGroup<CieLabPixelRepresentation, CieLabPixelData>(clusters, sourceBitmap, PixelRepresentations.CieLab, CIELABImageGrid, CIELabColorSlices)
                 );
 

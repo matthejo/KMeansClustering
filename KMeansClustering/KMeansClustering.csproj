@@ -57,6 +57,7 @@
       <SubType>Designer</SubType>
     </ApplicationDefinition>
     <Compile Include="BitmapCluster.cs" />
+    <Compile Include="CieLuvPixelData.cs" />
     <Compile Include="CieLabPixelData.cs" />
     <Compile Include="CieXyzPixelData.cs" />
     <Compile Include="ColorSpaceConversion.cs" />

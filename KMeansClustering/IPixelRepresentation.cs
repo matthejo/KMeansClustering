@@ -12,6 +12,7 @@ namespace KMeansClustering
         public static readonly StandardRgbPixelRepresentation Rgb = new StandardRgbPixelRepresentation();
         public static readonly CieXyzPixelRepresentation CieXyz = new CieXyzPixelRepresentation();
         public static readonly CieLabPixelRepresentation CieLab = new CieLabPixelRepresentation();
+        public static readonly CieLuvPixelRepresentation CieLuv = new CieLuvPixelRepresentation();
     }
 
     internal interface IPixelRepresentation<TPixelData>
