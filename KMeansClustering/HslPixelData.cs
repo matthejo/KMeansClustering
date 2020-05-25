@@ -55,7 +55,7 @@ namespace KMeansClustering
         {
             int sourceIndex = targetPixelIndex / 4;
 
-            RgbPixelData rgb = sourcePixelData[sourceIndex].ToRgb();
+            StandardRgbPixelData rgb = sourcePixelData[sourceIndex].ToRgb();
 
             targetRgbPixels[targetPixelIndex] = rgb.B;
             targetRgbPixels[targetPixelIndex + 1] = rgb.G;
@@ -132,7 +132,7 @@ namespace KMeansClustering
         public double S;
         public double L;
 
-        public RgbPixelData ToRgb()
+        public StandardRgbPixelData ToRgb()
         {
             double q = L < 0.5 ? (L * (1 + S)) : (L + S - (L * S));
             double p = (2 * L) - q;
@@ -145,7 +145,7 @@ namespace KMeansClustering
             byte g = (byte)(ComputeRGBComponent(p, q, tG) * byte.MaxValue);
             byte b = (byte)(ComputeRGBComponent(p, q, tB) * byte.MaxValue);
 
-            return new RgbPixelData
+            return new StandardRgbPixelData
             {
                 R = r,
                 G = g,

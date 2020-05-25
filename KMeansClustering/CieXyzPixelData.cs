@@ -35,7 +35,7 @@ namespace KMeansClustering
         public void FromPixelData(CieXyzPixelData[] sourcePixelData, byte[] targetRgbPixels, int targetPixelIndex)
         {
             int sourceIndex = targetPixelIndex / 4;
-            RgbPixelData rgbData = sourcePixelData[sourceIndex].ToLinearRgb().ToStandardRgb();
+            StandardRgbPixelData rgbData = sourcePixelData[sourceIndex].ToLinearRgb().ToStandardRgb();
             targetRgbPixels[targetPixelIndex] = rgbData.B;
             targetRgbPixels[targetPixelIndex + 1] = rgbData.G;
             targetRgbPixels[targetPixelIndex + 2] = rgbData.R;
@@ -51,51 +51,15 @@ namespace KMeansClustering
         public void ToPixelData(byte[] sourceRgbPixels, CieXyzPixelData[] targetPixelData, int sourcePixelIndex)
         {
             int targetIndex = sourcePixelIndex / 4;
-            RgbPixelData rgbPixel = new RgbPixelData { B = sourceRgbPixels[sourcePixelIndex], G = sourceRgbPixels[sourcePixelIndex + 1], R = sourceRgbPixels[sourcePixelIndex + 2] };
+            StandardRgbPixelData rgbPixel = new StandardRgbPixelData { B = sourceRgbPixels[sourcePixelIndex], G = sourceRgbPixels[sourcePixelIndex + 1], R = sourceRgbPixels[sourcePixelIndex + 2] };
             targetPixelData[targetIndex] = rgbPixel.ToLinearRgb().ToCieXyz();
         }
     }
 
     internal struct CieXyzPixelData
     {
-        private static readonly Matrix4x4 cieToLinearRgbTransform = Matrix4x4.Transpose(new Matrix4x4
-        {
-            M11 = 3.24096994f,
-            M12 = -1.53738318f,
-            M13 = -0.49861076f,
-            M14 = 0.0f,
-
-            M21 = -0.96924364f,
-            M22 = 1.8759675f,
-            M23 = 0.04155506f,
-            M24 = 0.0f,
-
-            M31 = 0.05563008f,
-            M32 = -0.20397696f,
-            M33 = 1.05697151f,
-            M34 = 0.0f,
-
-            M41 = 0.0f,
-            M42 = 0.0f,
-            M43 = 0.0f,
-            M44 = 1.0f
-        });
-
         public double X;
         public double Y;
         public double Z;
-
-        public LinearRgbPixelData ToLinearRgb()
-        {
-            Vector4 xyz = new Vector4((float)X, (float)Y, (float)Z, 1.0f);
-            Vector4 rgb = Vector4.Transform(xyz, cieToLinearRgbTransform);
-
-            return new LinearRgbPixelData
-            {
-                R = rgb.X,
-                G = rgb.Y,
-                B = rgb.Z
-            };
-        }
     }
 }

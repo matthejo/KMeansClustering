@@ -24,6 +24,7 @@
                 <ComboBoxItem>RGB</ComboBoxItem>
                 <ComboBoxItem>HSL</ComboBoxItem>
                 <ComboBoxItem>CIEXYZ</ComboBoxItem>
+                <ComboBoxItem>CIELab</ComboBoxItem>
             </ComboBox>
             <Button Content="Compute" Click="Compute" Margin="8,0" />
             <Label x:Name="ResultStatus" Margin="8,0" />

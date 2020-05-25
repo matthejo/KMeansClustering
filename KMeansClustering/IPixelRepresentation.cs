@@ -9,9 +9,10 @@ namespace KMeansClustering
 {
     internal static class PixelRepresentations
     {
-        public static readonly RgbPixelRepresentation Rgb = new RgbPixelRepresentation();
+        public static readonly StandardRgbPixelRepresentation Rgb = new StandardRgbPixelRepresentation();
         public static readonly HslPixelRepresentation Hsl = new HslPixelRepresentation();
         public static readonly CieXyzPixelRepresentation CieXyz = new CieXyzPixelRepresentation();
+        public static readonly CieLabPixelRepresentation CieLab = new CieLabPixelRepresentation();
     }
 
     internal interface IPixelRepresentation<TPixelData>

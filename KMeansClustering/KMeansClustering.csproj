@@ -56,10 +56,12 @@
       <Generator>MSBuild:Compile</Generator>
       <SubType>Designer</SubType>
     </ApplicationDefinition>
+    <Compile Include="CieLabPixelData.cs" />
     <Compile Include="CieXyzPixelData.cs" />
+    <Compile Include="ColorSpaceConversion.cs" />
     <Compile Include="HslPixelData.cs" />
     <Compile Include="LinearRgbPixelData.cs" />
-    <Compile Include="RgbPixelData.cs" />
+    <Compile Include="StandardRgbPixelData.cs" />
     <Page Include="MainWindow.xaml">
       <Generator>MSBuild:Compile</Generator>
       <SubType>Designer</SubType>

@@ -60,7 +60,7 @@ namespace KMeansClustering
             int iterationCount = 0;
             if (PixelRep.SelectedIndex == 0)
             {
-                var targetBitmap = new MemoryBitmap<RgbPixelRepresentation, RgbPixelData>(sourceImage, PixelRepresentations.Rgb);
+                var targetBitmap = new MemoryBitmap<StandardRgbPixelRepresentation, StandardRgbPixelData>(sourceImage, PixelRepresentations.Rgb);
                 iterationCount = await targetBitmap.ClusterAsync(clusters);
                 this.TransformedImage.Source = targetBitmap.Render();
             }
@@ -70,9 +70,15 @@ namespace KMeansClustering
                 iterationCount = await targetBitmap.ClusterAsync(clusters);
                 this.TransformedImage.Source = targetBitmap.Render();
             }
-            else
+            else if (PixelRep.SelectedIndex == 2)
             {
                 var targetBitmap = new MemoryBitmap<CieXyzPixelRepresentation, CieXyzPixelData>(sourceImage, PixelRepresentations.CieXyz);
+                iterationCount = await targetBitmap.ClusterAsync(clusters);
+                this.TransformedImage.Source = targetBitmap.Render();
+            }
+            else
+            {
+                var targetBitmap = new MemoryBitmap<CieLabPixelRepresentation, CieLabPixelData>(sourceImage, PixelRepresentations.CieLab);
                 iterationCount = await targetBitmap.ClusterAsync(clusters);
                 this.TransformedImage.Source = targetBitmap.Render();
             }

@@ -7,14 +7,14 @@ using System.Threading.Tasks;
 
 namespace KMeansClustering
 {
-    internal sealed class RgbPixelRepresentation : IPixelRepresentation<RgbPixelData>
+    internal sealed class StandardRgbPixelRepresentation : IPixelRepresentation<StandardRgbPixelData>
     {
-        public void AddSample(ref PixelDataMeanAccumulator accumulator, RgbPixelData sample)
+        public void AddSample(ref PixelDataMeanAccumulator accumulator, StandardRgbPixelData sample)
         {
             accumulator.AddSample(sample.R, sample.G, sample.B);
         }
 
-        public double DistanceSquared(RgbPixelData a, RgbPixelData b)
+        public double DistanceSquared(StandardRgbPixelData a, StandardRgbPixelData b)
         {
             double deltaR = a.R - b.R;
             double deltaG = a.G - b.G;
@@ -23,12 +23,12 @@ namespace KMeansClustering
             return deltaR * deltaR + deltaG * deltaG + deltaB * deltaB;
         }
 
-        public bool Equals(RgbPixelData a, RgbPixelData b)
+        public bool Equals(StandardRgbPixelData a, StandardRgbPixelData b)
         {
             return a == b;
         }
 
-        public void FromPixelData(RgbPixelData[] sourcePixelData, byte[] targetRgbPixels, int targetPixelIndex)
+        public void FromPixelData(StandardRgbPixelData[] sourcePixelData, byte[] targetRgbPixels, int targetPixelIndex)
         {
             int sourceIndex = targetPixelIndex / 4;
             targetRgbPixels[targetPixelIndex] = sourcePixelData[sourceIndex].B;
@@ -37,10 +37,10 @@ namespace KMeansClustering
             targetRgbPixels[targetPixelIndex + 3] = 0xFF;
         }
 
-        public RgbPixelData GetAverage(PixelDataMeanAccumulator accumulator)
+        public StandardRgbPixelData GetAverage(PixelDataMeanAccumulator accumulator)
         {
             accumulator.GetAverage(out double r, out double g, out double b);
-            return new RgbPixelData
+            return new StandardRgbPixelData
             {
                 R = (byte)Math.Round(r),
                 G = (byte)Math.Round(g),
@@ -48,7 +48,7 @@ namespace KMeansClustering
             };
         }
 
-        public void ToPixelData(byte[] sourceRgbPixels, RgbPixelData[] targetPixelData, int sourcePixelIndex)
+        public void ToPixelData(byte[] sourceRgbPixels, StandardRgbPixelData[] targetPixelData, int sourcePixelIndex)
         {
             int targetIndex = sourcePixelIndex / 4;
             targetPixelData[targetIndex].B = sourceRgbPixels[sourcePixelIndex];
@@ -58,7 +58,7 @@ namespace KMeansClustering
     }
 
     [StructLayout(LayoutKind.Sequential)]
-    internal struct RgbPixelData
+    internal struct StandardRgbPixelData
     {
         public byte R;
         public byte G;
@@ -66,7 +66,7 @@ namespace KMeansClustering
 
         public override bool Equals(object obj)
         {
-            if (!(obj is RgbPixelData other))
+            if (!(obj is StandardRgbPixelData other))
             {
                 return false;
             }
@@ -79,33 +79,14 @@ namespace KMeansClustering
             return R << 16 | G << 8 | B;
         }
 
-        public static bool operator ==(RgbPixelData a, RgbPixelData b)
+        public static bool operator ==(StandardRgbPixelData a, StandardRgbPixelData b)
         {
             return a.R == b.R && a.G == b.G && a.B == b.B;
         }
 
-        public static bool operator !=(RgbPixelData a, RgbPixelData b)
+        public static bool operator !=(StandardRgbPixelData a, StandardRgbPixelData b)
         {
             return !(a == b);
-        }
-
-        public LinearRgbPixelData ToLinearRgb()
-        {
-            double sR = R / 255.0;
-            double sG = G / 255.0;
-            double sB = B / 255.0;
-
-            return new LinearRgbPixelData
-            {
-                R = convertGammaToLinear(sR),
-                G = convertGammaToLinear(sG),
-                B = convertGammaToLinear(sB)
-            };
-
-            double convertGammaToLinear(double u)
-            {
-                return u <= 0.04045 ? u / 12.92 : Math.Pow((u + 0.055) / 1.055, 2.4);
-            }
         }
     }
 }
