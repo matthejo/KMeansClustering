@@ -57,48 +57,57 @@ namespace KMeansClustering
             computeStarted = DateTime.Now;
             DispatcherTimer timer = new DispatcherTimer(TimeSpan.FromMilliseconds(100), DispatcherPriority.Normal, OnTick, Dispatcher);
             timer.Start();
-            int iterationCount = 0;
 
             StandardRgbBitmap sourceBitmap = sourceImage.ToStandardRgbBitmap();
 
-            RGBImage.Source = null;
-            CIEXYZImage.Source = null;
-            CIELABImage.Source = null;
-            
-            iterationCount = await UpdateRGB(clusters, iterationCount, sourceBitmap);
-            
-            iterationCount = await UpdateCIEXYZ(clusters, iterationCount, sourceBitmap);
-            
-            iterationCount = await UpdateCIELAB(clusters, iterationCount, sourceBitmap);
-            
+            foreach (Image image in RGBImageGrid.Children.Cast<Image>())
+            {
+                image.Source = null;
+            }
+            foreach (Image image in CIEXYZImageGrid.Children.Cast<Image>())
+            {
+                image.Source = null;
+            }
+            foreach (Image image in CIELABImageGrid.Children.Cast<Image>())
+            {
+                image.Source = null;
+            }
+
+            await Task.WhenAll(
+                UpdateGroup<StandardRgbPixelRepresentation, StandardRgbPixelData>(clusters, sourceBitmap, PixelRepresentations.Rgb, RGBImageGrid),
+                UpdateGroup<CieXyzPixelRepresentation, CieXyzPixelData>(clusters, sourceBitmap, PixelRepresentations.CieXyz, CIEXYZImageGrid),
+                UpdateGroup<CieLabPixelRepresentation, CieLabPixelData>(clusters, sourceBitmap, PixelRepresentations.CieLab, CIELABImageGrid)
+                );
+
             timer.Stop();
             this.IsEnabled = true;
             ResultStatus.Content = $"Completed in {(int)((DateTime.Now - computeStarted).TotalSeconds)} seconds.";
 
         }
 
-        private async Task<int> UpdateCIELAB(int clusters, int iterationCount, StandardRgbBitmap sourceBitmap)
+        private async Task UpdateGroup<TPixelRepresentation, TPixelData>(int clusters, StandardRgbBitmap sourceBitmap, TPixelRepresentation pixelRepresentation, Panel parent)
+            where TPixelData : struct
+            where TPixelRepresentation : IPixelRepresentation<TPixelData>
         {
-            var targetBitmap = new BitmapCluster<CieLabPixelRepresentation, CieLabPixelData>(sourceBitmap.Pixels, PixelRepresentations.CieLab, clusters);
-            iterationCount = await targetBitmap.ClusterAsync(clusters);
-            this.CIELABImage.Source = new StandardRgbBitmap(targetBitmap.Render(), sourceBitmap.Width, sourceBitmap.Height, sourceBitmap.DpiX, sourceBitmap.DpiY).ToBitmapSource();
-            return iterationCount;
-        }
+            int currentClusterCount = Math.Max(clusters, 16);
+            var targetBitmap = new BitmapCluster<TPixelRepresentation, TPixelData>(sourceBitmap.Pixels, pixelRepresentation, currentClusterCount);
+            for (int targetIndex = 0; targetIndex < parent.Children.Count; targetIndex++)
+            {
+                await targetBitmap.ClusterAsync(currentClusterCount == clusters ? 50 : 5);
+                ((Image)parent.Children[targetIndex]).Source = new StandardRgbBitmap(targetBitmap.Render(), sourceBitmap.Width, sourceBitmap.Height, sourceBitmap.DpiX, sourceBitmap.DpiY).ToBitmapSource();
 
-        private async Task<int> UpdateCIEXYZ(int clusters, int iterationCount, StandardRgbBitmap sourceBitmap)
-        {
-            var targetBitmap = new BitmapCluster<CieXyzPixelRepresentation, CieXyzPixelData>(sourceBitmap.Pixels, PixelRepresentations.CieXyz, clusters);
-            iterationCount = await targetBitmap.ClusterAsync(clusters);
-            this.CIEXYZImage.Source = new StandardRgbBitmap(targetBitmap.Render(), sourceBitmap.Width, sourceBitmap.Height, sourceBitmap.DpiX, sourceBitmap.DpiY).ToBitmapSource();
-            return iterationCount;
-        }
-
-        private async Task<int> UpdateRGB(int clusters, int iterationCount, StandardRgbBitmap sourceBitmap)
-        {
-            var targetBitmap = new BitmapCluster<StandardRgbPixelRepresentation, StandardRgbPixelData>(sourceBitmap.Pixels, PixelRepresentations.Rgb, clusters);
-            iterationCount = await targetBitmap.ClusterAsync(clusters);
-            this.RGBImage.Source = new StandardRgbBitmap(targetBitmap.Render(), sourceBitmap.Width, sourceBitmap.Height, sourceBitmap.DpiX, sourceBitmap.DpiY).ToBitmapSource();
-            return iterationCount;
+                if (currentClusterCount == clusters)
+                {
+                    currentClusterCount = Math.Max(clusters, 16);
+                    targetBitmap = new BitmapCluster<TPixelRepresentation, TPixelData>(sourceBitmap.Pixels, pixelRepresentation, currentClusterCount);
+                }
+                else
+                {
+                    currentClusterCount = clusters;
+                    var newSeedClusters = await targetBitmap.PickDifferentiatedClusters(currentClusterCount);
+                    targetBitmap = new BitmapCluster<TPixelRepresentation, TPixelData>(sourceBitmap.Pixels, pixelRepresentation, newSeedClusters);
+                }
+            }
         }
 
         private void OnTick(object sender, EventArgs e)

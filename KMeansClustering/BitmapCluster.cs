@@ -19,15 +19,26 @@ namespace KMeansClustering
         private readonly TPixelData[] pixelData;
 
         private readonly int[] pixelClusters;
-        private readonly TPixelData[] clusterMeans;
+        private TPixelData[] clusterMeans;
+        private readonly int[] clusterWeights;
 
-        public BitmapCluster(StandardRgbPixelData[] pixels, TPixelRepresentation pixelRepresentation, int clusterCount)
+        public BitmapCluster(StandardRgbPixelData[] pixels, TPixelRepresentation pixelRepresentation, TPixelData[] initialClusterSeeds)
         {
             this.pixels = pixels;
             this.pixelRepresentation = pixelRepresentation;
             this.pixelClusters = new int[pixels.Length];
             this.pixelData = ConvertToPixelData(pixels, pixelRepresentation);
-            this.clusterMeans = new TPixelData[clusterCount];
+            this.clusterMeans = initialClusterSeeds;
+            if (this.clusterMeans != null)
+            {
+                this.clusterWeights = new int[clusterMeans.Length];
+            }
+        }
+
+        public BitmapCluster(StandardRgbPixelData[] pixels, TPixelRepresentation pixelRepresentation, int clusterCount)
+            : this(pixels, pixelRepresentation, null)
+        {
+            this.clusterWeights = new int[clusterCount];
         }
 
         public StandardRgbPixelData[] Render()
@@ -40,14 +51,51 @@ namespace KMeansClustering
             return pixels.Select(p => pixelRepresentation.ConvertFromStandardRgb(p)).ToArray();
         }
 
-        public Task<int> ClusterAsync(int maxIterations = 200)
+        public Task<TPixelData[]> PickDifferentiatedClusters(int subsetCount)
         {
             return Task.Run(() =>
             {
-                Random random = new Random();
+                TPixelData[] differentiatedClusters = new TPixelData[subsetCount];
+                differentiatedClusters[0] = this.clusterMeans[this.clusterWeights.Select((w, i) => new { Index = i, Weight = w }).OrderByDescending(t => t.Weight).Select(t => t.Index).First()];
 
-                InitializeClusterSeeds(clusterMeans, random);
+                for (int differentClusterIndex = 1; differentClusterIndex < differentiatedClusters.Length; differentClusterIndex++)
+                {
+                    double highestDistance = 0;
+                    int bestCluster = -1;
+
+                    for (int clusterIndex = 0; clusterIndex < this.clusterMeans.Length; clusterIndex++)
+                    {
+                        double minDistance = double.MaxValue;
+                        for (int previousDifferentClusterIndex = 0; previousDifferentClusterIndex < differentClusterIndex; previousDifferentClusterIndex++)
+                        {
+                            minDistance = Math.Min(minDistance, pixelRepresentation.DistanceSquared(clusterMeans[clusterIndex], differentiatedClusters[previousDifferentClusterIndex]));
+                        }
+
+                        if (minDistance > highestDistance)
+                        {
+                            bestCluster = clusterIndex;
+                            highestDistance = minDistance;
+                        }
+                    }
+
+                    differentiatedClusters[differentClusterIndex] = clusterMeans[bestCluster];
+                }
+
+                return differentiatedClusters;
+            });
+        }
+
+        public Task<int> ClusterAsync(int maxIterations = 50)
+        {
+            return Task.Run(() =>
+            {
                 int iterationCount = 0;
+
+                if (clusterMeans == null)
+                {
+                    clusterMeans = CreateRandomSeeding(pixelData, pixelRepresentation, clusterWeights.Length);
+                }
+
                 while (!IterateNextCluster(clusterMeans, pixelClusters))
                 {
                     iterationCount++;
@@ -65,6 +113,10 @@ namespace KMeansClustering
         private bool IterateNextCluster(TPixelData[] clusterMeans, int[] clusterAssigments)
         {
             PixelDataMeanAccumulator[] accumulatedSamples = new PixelDataMeanAccumulator[clusterMeans.Length];
+            for (int i = 0; i < clusterWeights.Length; i++)
+            {
+                clusterWeights[i] = 0;
+            }
 
             for (int pixelIndex = 0; pixelIndex < pixelData.Length; pixelIndex++)
             {
@@ -82,6 +134,7 @@ namespace KMeansClustering
                 }
 
                 clusterAssigments[pixelIndex] = bestCluster;
+                clusterWeights[bestCluster]++;
                 pixelRepresentation.AddSample(ref accumulatedSamples[bestCluster], pixelData[pixelIndex]);
             }
 
@@ -104,8 +157,10 @@ namespace KMeansClustering
             }
         }
 
-        private void InitializeClusterSeeds(TPixelData[] clusterMeans, Random random)
+        private static TPixelData[] CreateRandomSeeding(TPixelData[] pixelData, TPixelRepresentation pixelRepresentation, int clusterCount)
         {
+            Random random = new Random();
+            TPixelData[] clusterMeans = new TPixelData[clusterCount];
             // Randomly choose a first cluster point
             clusterMeans[0] = pixelData[random.Next(pixelData.Length)];
 
@@ -139,6 +194,8 @@ namespace KMeansClustering
                     }
                 }
             }
+
+            return clusterMeans;
         }
     }
 }

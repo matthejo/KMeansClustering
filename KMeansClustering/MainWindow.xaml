@@ -34,19 +34,28 @@
         <Border Grid.Row="1" Grid.Column="1" BorderBrush="LightGray" BorderThickness="0,1,1,1" Margin="0,0,8,0">
             <DockPanel LastChildFill="True">
                 <Label DockPanel.Dock="Top" Content="RGB" />
-                <Image x:Name="RGBImage" Stretch="Uniform"  />
+                <UniformGrid Rows="2" x:Name="RGBImageGrid">
+                    <Image Stretch="Uniform"  />
+                    <Image Stretch="Uniform"  />
+                </UniformGrid>
             </DockPanel>
         </Border>
         <Border Grid.Row="2" Grid.Column="0" BorderBrush="LightGray" BorderThickness="1,0,1,1" Margin="8,0,0,8">
             <DockPanel LastChildFill="True">
                 <Label DockPanel.Dock="Top" Content="CIE XYZ" />
-                <Image x:Name="CIEXYZImage" Stretch="Uniform"  />
+                <UniformGrid Rows="2" x:Name="CIEXYZImageGrid">
+                    <Image Stretch="Uniform"  />
+                    <Image Stretch="Uniform"  />
+                </UniformGrid>
             </DockPanel>
         </Border>
         <Border Grid.Row="2" Grid.Column="1" BorderBrush="LightGray" BorderThickness="0,0,1,1" Margin="0,0,8,8">
             <DockPanel LastChildFill="True">
                 <Label DockPanel.Dock="Top" Content="CIE L*a*b*" />
-                <Image x:Name="CIELABImage" Stretch="Uniform"  />
+                <UniformGrid Rows="2" x:Name="CIELABImageGrid">
+                    <Image Stretch="Uniform"  />
+                    <Image Stretch="Uniform"  />
+                </UniformGrid>
             </DockPanel>
         </Border>
     </Grid>
