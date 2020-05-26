@@ -7,7 +7,30 @@
         mc:Ignorable="d"
         FontSize="14"
         Title="K-Means Clustering" Height="800" Width="1000">
-    <Grid>
+    <Window.Resources>
+        <BooleanToVisibilityConverter x:Key="BooleanToVisibilityConverter" />
+
+        <DataTemplate x:Key="ClusterOperationTemplate">
+            <Border Grid.Row="1" Grid.Column="1" Background="White" BorderBrush="LightGray" BorderThickness="1" Margin="-1,-1,0,0" x:Name="CIELabBorder">
+                <DockPanel LastChildFill="True">
+                    <Border DockPanel.Dock="Top" Background="#EEEEEE">
+                        <DockPanel LastChildFill="True">
+                            <Label Content="{Binding OperationName}" FontSize="16" FontWeight="Bold" DockPanel.Dock="Left" Width="100" Margin="8,8,20,8"/>
+                            <Button Content="Save" MinWidth="70" Padding="8,4" DockPanel.Dock="Right" Margin="8" IsEnabled="{Binding IsComplete}" Command="{Binding SaveCommand}" />
+                            <Grid x:Name="CIELabColorSlices" Margin="2,8" local:GridColorHistogramProperties.ColumnWidths="{Binding ColorWeights}" local:GridColorHistogramProperties.ColorValues="{Binding Colors}" />
+                        </DockPanel>
+                    </Border>
+                    <Grid>
+                        <UniformGrid Rows="1" x:Name="CIELABImageGrid">
+                            <Image Stretch="Uniform" Source="{Binding Bitmap}" />
+                        </UniformGrid>
+                        <Label HorizontalContentAlignment="Center" HorizontalAlignment="Stretch" VerticalAlignment="Center" Content="{Binding Status}" Background="White" Visibility="{Binding IsRunning, Converter={StaticResource BooleanToVisibilityConverter}}" />
+                    </Grid>
+                </DockPanel>
+            </Border>
+        </DataTemplate>
+    </Window.Resources>
+    <Grid Margin="8">
         <Grid.RowDefinitions>
             <RowDefinition Height="*" />
             <RowDefinition Height="*" />
@@ -17,7 +40,7 @@
             <ColumnDefinition Width="*" />
         </Grid.ColumnDefinitions>
 
-        <Border Grid.Row="0" BorderBrush="LightGray" BorderThickness="1" Margin="8,0,0,0">
+        <Border Grid.Row="0" BorderBrush="LightGray" BorderThickness="1" Margin="-1,-1,0,0">
             <DockPanel LastChildFill="True">
                 <Border DockPanel.Dock="Top" Background="#EEEEEE">
                     <DockPanel LastChildFill="False">
@@ -33,53 +56,9 @@
                 <Image x:Name="OriginalImage" Stretch="Uniform"  />
             </DockPanel>
         </Border>
-        <Border Grid.Row="0" Grid.Column="1" BorderBrush="LightGray" BorderThickness="0,1,1,1" Margin="0,0,8,0">
-            <DockPanel LastChildFill="True">
-                <Border DockPanel.Dock="Top" Background="#EEEEEE">
-                    <DockPanel LastChildFill="True">
-                        <Label Content="RGB" FontSize="16" FontWeight="Bold" DockPanel.Dock="Left" Width="100" Margin="8,8,20,8" />
-                        <Grid x:Name="RGBColorSlices" Margin="2" />
-                    </DockPanel>
-                </Border>
-                <Grid>
-                    <UniformGrid Rows="1" x:Name="RGBImageGrid">
-                        <Image Stretch="Uniform"  />
-                    </UniformGrid>
-                    <Label HorizontalContentAlignment="Center" HorizontalAlignment="Stretch" VerticalAlignment="Center" x:Name="RGBStatus" Background="White" Visibility="Hidden"/>
-                </Grid>
-            </DockPanel>
-        </Border>
-        <Border Grid.Row="1" Grid.Column="0" BorderBrush="LightGray" BorderThickness="1,0,1,1" Margin="8,0,0,8">
-            <DockPanel LastChildFill="True">
-                <Border DockPanel.Dock="Top" Background="#EEEEEE">
-                    <DockPanel LastChildFill="True">
-                        <Label Content="CIE L*u*v*" FontSize="16" FontWeight="Bold" DockPanel.Dock="Left" Width="100" Margin="8,8,20,8"  />
-                        <Grid x:Name="CIELUVColorSlices" Margin="2" />
-                    </DockPanel>
-                </Border>
-                <Grid>
-                    <UniformGrid Rows="1" x:Name="CIELUVImageGrid">
-                        <Image Stretch="Uniform"  />
-                    </UniformGrid>
-                    <Label HorizontalContentAlignment="Center" HorizontalAlignment="Stretch" VerticalAlignment="Center" x:Name="CIELuvStatus" Background="White" Visibility="Hidden"/>
-                </Grid>
-            </DockPanel>
-        </Border>
-        <Border Grid.Row="1" Grid.Column="1" BorderBrush="LightGray" BorderThickness="0,0,1,1" Margin="0,0,8,8">
-            <DockPanel LastChildFill="True">
-                <Border DockPanel.Dock="Top" Background="#EEEEEE">
-                    <DockPanel LastChildFill="True">
-                        <Label Content="CIE L*a*b*" FontSize="16" FontWeight="Bold" DockPanel.Dock="Left" Width="100" Margin="8,8,20,8"/>
-                        <Grid x:Name="CIELabColorSlices" Margin="2" />
-                    </DockPanel>
-                </Border>
-                <Grid>
-                    <UniformGrid Rows="1" x:Name="CIELABImageGrid">
-                        <Image Stretch="Uniform"  />
-                    </UniformGrid>
-                    <Label HorizontalContentAlignment="Center" HorizontalAlignment="Stretch" VerticalAlignment="Center" x:Name="CIELabStatus" Background="White" Visibility="Hidden" />
-                </Grid>
-            </DockPanel>
-        </Border>
+        
+        <ContentControl x:Name="sRGB" Grid.Row="0" Grid.Column="1" ContentTemplate="{StaticResource ClusterOperationTemplate}" />
+        <ContentControl x:Name="CIELuv" Grid.Row="1" Grid.Column="0" ContentTemplate="{StaticResource ClusterOperationTemplate}" />
+        <ContentControl x:Name="CIELab" Grid.Row="1" Grid.Column="1" ContentTemplate="{StaticResource ClusterOperationTemplate}" />
     </Grid>
 </Window>

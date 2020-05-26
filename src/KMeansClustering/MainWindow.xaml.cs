@@ -1,19 +1,14 @@
 ﻿using Microsoft.Win32;
 using System;
-using System.Collections.Generic;
 using System.Linq;
-using System.Text;
 using System.Threading.Tasks;
 using System.Windows;
 using System.Windows.Controls;
-using System.Windows.Data;
-using System.Windows.Documents;
-using System.Windows.Input;
 using System.Windows.Media;
 using System.Windows.Media.Imaging;
-using System.Windows.Navigation;
 using System.Windows.Shapes;
 using System.Windows.Threading;
+using IOPath = System.IO.Path;
 
 namespace KMeansClustering
 {
@@ -22,13 +17,24 @@ namespace KMeansClustering
     /// </summary>
     public partial class MainWindow : Window
     {
+        private BitmapClusterOperation cieLabOperation;
+        private BitmapClusterOperation cieLuvOperation;
+        private BitmapClusterOperation rgbOperation;
+        private BitmapSource sourceImage;
+        private string originalFileName;
+
         public MainWindow()
         {
             InitializeComponent();
-        }
 
-        private BitmapSource sourceImage;
-        private DateTime computeStarted;
+            rgbOperation = new BitmapClusterOperation("sRGB", ColorSpaces.Rgb, "_sRGB");
+            cieLuvOperation = new BitmapClusterOperation("CIE L*u*v*", ColorSpaces.CieLuv, "_CIELUV");
+            cieLabOperation = new BitmapClusterOperation("CIE L*a*b*", ColorSpaces.CieLab, "_CIELAB");
+
+            sRGB.Content = rgbOperation;
+            CIELuv.Content = cieLuvOperation;
+            CIELab.Content = cieLabOperation;
+        }
 
         private void LoadImage(object sender, RoutedEventArgs e)
         {
@@ -38,6 +44,7 @@ namespace KMeansClustering
             };
             if (dialog.ShowDialog() == true)
             {
+                originalFileName = IOPath.GetFileNameWithoutExtension(dialog.FileName);
                 sourceImage = BitmapFrame.Create(new Uri(dialog.FileName), BitmapCreateOptions.None, BitmapCacheOption.Default);
                 OriginalImage.Source = sourceImage;
                 ComputeOptions.IsEnabled = true;
@@ -46,117 +53,28 @@ namespace KMeansClustering
 
         private async void Compute(object sender, RoutedEventArgs e)
         {
-
             int clusters;
             if (!int.TryParse(ClusterCount.Text, out clusters))
             {
                 MessageBox.Show("Could not parse the cluster count");
                 return;
             }
+            if (clusters < 1 || clusters > 100)
+            {
+                MessageBox.Show("Clusters must be between 1 and 100");
+                return;
+            }
 
             this.IsEnabled = false;
-            computeStarted = DateTime.Now;
 
             StandardRgbBitmap sourceBitmap = sourceImage.ToStandardRgbBitmap();
 
-            foreach (Image image in RGBImageGrid.Children.Cast<Image>())
-            {
-                image.Source = null;
-            }
-            foreach (Image image in CIELUVImageGrid.Children.Cast<Image>())
-            {
-                image.Source = null;
-            }
-            foreach (Image image in CIELABImageGrid.Children.Cast<Image>())
-            {
-                image.Source = null;
-            }
-            RGBColorSlices.Children.Clear();
-            CIELUVColorSlices.Children.Clear();
-            CIELabColorSlices.Children.Clear();
-
             await Task.WhenAll(
-                UpdateGroup(clusters, sourceBitmap, ColorSpaces.Rgb, RGBImageGrid, RGBColorSlices, RGBStatus),
-                UpdateGroup(clusters, sourceBitmap, ColorSpaces.CieLuv, CIELUVImageGrid, CIELUVColorSlices, CIELuvStatus),
-                UpdateGroup(clusters, sourceBitmap, ColorSpaces.CieLab, CIELABImageGrid, CIELabColorSlices, CIELabStatus)
-                );
+                rgbOperation.RunAsync(sourceBitmap, clusters, originalFileName),
+                cieLuvOperation.RunAsync(sourceBitmap, clusters, originalFileName),
+                cieLabOperation.RunAsync(sourceBitmap, clusters, originalFileName));
 
             this.IsEnabled = true;
-        }
-
-        private async Task UpdateGroup(int clusters, StandardRgbBitmap sourceBitmap, IColorSpace colorSpace, Panel parent, Grid colorSlices, Label label)
-        {
-            string currentStatus = "Computing clusters...";
-            label.Visibility = Visibility.Visible;
-            EventHandler onTick = (sender, e) =>
-            {
-                label.Content = $"{currentStatus} [{DateTime.Now - computeStarted:mm\\:ss}]";
-            };
-            DispatcherTimer timer = new DispatcherTimer(TimeSpan.FromMilliseconds(100), DispatcherPriority.Normal, onTick, Dispatcher);
-            timer.Start();
-
-            for (int targetIndex = 0; targetIndex < parent.Children.Count; targetIndex++)
-            {
-                BitmapCluster targetBitmap = null;
-                if (clusters < 16)
-                {
-                    currentStatus = "Creating initial 16-cluster seed... (iteration 0)";
-                    targetBitmap = new BitmapCluster(sourceBitmap.Pixels, colorSpace, 16);
-                    await targetBitmap.ClusterAsync(i =>
-                    {
-                        currentStatus = $"Creating initial 16-cluster seed... (iteration {i})";
-                    }, 3);
-
-                    currentStatus = $"Rendering 16-cluster image...";
-                    ((Image)parent.Children[targetIndex]).Source = new StandardRgbBitmap(await targetBitmap.RenderAsync(), sourceBitmap.Width, sourceBitmap.Height, sourceBitmap.DpiX, sourceBitmap.DpiY).ToBitmapSource();
-
-                    currentStatus = $"Choosing refined seed colors...";
-                    var newSeedClusters = await targetBitmap.ChooseDifferentiatedClusters(clusters);
-                    targetBitmap = new BitmapCluster(sourceBitmap.Pixels, colorSpace, newSeedClusters);
-                }
-                else
-                {
-                    targetBitmap = new BitmapCluster(sourceBitmap.Pixels, colorSpace, clusters);
-                }
-
-                currentStatus = $"Computing {clusters}-cluster image... (iteration 0)";
-                await targetBitmap.ClusterAsync(i =>
-                {
-                    currentStatus = $"Computing {clusters}-cluster image... (iteration {i})";
-                }, 200);
-
-                currentStatus = $"Rendering {clusters}-cluster image...";
-                ((Image)parent.Children[targetIndex]).Source = new StandardRgbBitmap(await targetBitmap.RenderAsync(), sourceBitmap.Width, sourceBitmap.Height, sourceBitmap.DpiX, sourceBitmap.DpiY).ToBitmapSource();
-
-                if (colorSlices != null)
-                {
-                    var weights = targetBitmap.ClusterWeights;
-                    var colors = targetBitmap.ClusterMeans;
-
-                    var sortedByWeight = weights.Zip(colors, (w, c) => new { Weight = w, Color = c }).OrderByDescending(t => t.Weight).ToArray();
-
-                    colorSlices.Children.Clear();
-                    colorSlices.ColumnDefinitions.Clear();
-                    for (int i = 0; i < clusters; i++)
-                    {
-                        colorSlices.ColumnDefinitions.Add(new ColumnDefinition
-                        {
-                            Width = new GridLength(sortedByWeight[i].Weight, GridUnitType.Star)
-                        });
-                        var rectangle = new Rectangle
-                        {
-                            Fill = new SolidColorBrush(sortedByWeight[i].Color.ToWindowsColor()),
-                            Margin = new Thickness(2, 0, 0, 0)
-                        };
-                        Grid.SetColumn(rectangle, i);
-                        colorSlices.Children.Add(rectangle);
-                    }
-                }
-            }
-
-            timer.Stop();
-            label.Content = null;
-            label.Visibility = Visibility.Hidden;
         }
     }
 }
