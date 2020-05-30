@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Linq;
 using System.Numerics;
+using System.Threading;
 using System.Threading.Tasks;
 
 namespace KMeansClustering
@@ -172,34 +173,22 @@ namespace KMeansClustering
             // Randomly choose a first cluster point
             clusterMeans[0] = pixels[random.Next(pixels.Length)];
 
-            float[] weightedProbabilities = new float[pixels.Length];
-            float[,] pixelDistances = new float[pixels.Length, clusterCount - 1];
+            float[] closestDistances = new float[pixels.Length];
+            Parallel.For(0, pixels.Length, i => closestDistances[i] = float.MaxValue);
 
             for (int clusterIndex = 1; clusterIndex < clusterMeans.Length; clusterIndex++)
             {
                 // Choose a cluster point based on k-means++, where the weighted probability of the point being chosen is associated with its
                 // squared distance from the nearest existing point.
+                Parallel.For(0, pixels.Length, pixelIndex =>
+                {
+                    closestDistances[pixelIndex] = Math.Min(closestDistances[pixelIndex], Vector3.DistanceSquared(clusterMeans[clusterIndex - 1], pixels[pixelIndex]));
+                });
 
-                float totalDistances = 0;
+                double weightedRandom = random.NextDouble() * closestDistances.Sum();
                 for (int pixelIndex = 0; pixelIndex < pixels.Length; pixelIndex++)
                 {
-                    pixelDistances[pixelIndex, clusterIndex - 1] = Vector3.DistanceSquared(clusterMeans[clusterIndex - 1], pixels[pixelIndex]);
-                    float closestDistance = float.MaxValue;
-                    for (int previousClusterIndex = 0; previousClusterIndex < clusterIndex; previousClusterIndex++)
-                    {
-                        if (pixelDistances[pixelIndex, previousClusterIndex] < closestDistance)
-                        {
-                            closestDistance = pixelDistances[pixelIndex, previousClusterIndex];
-                        }
-                    }
-                    weightedProbabilities[pixelIndex] = closestDistance;
-                    totalDistances += closestDistance;
-                }
-
-                double weightedRandom = random.NextDouble() * totalDistances;
-                for (int pixelIndex = 0; pixelIndex < pixels.Length; pixelIndex++)
-                {
-                    weightedRandom -= weightedProbabilities[pixelIndex];
+                    weightedRandom -= closestDistances[pixelIndex];
                     if (weightedRandom <= 0 || pixelIndex == pixels.Length - 1)
                     {
                         clusterMeans[clusterIndex] = pixels[pixelIndex];
