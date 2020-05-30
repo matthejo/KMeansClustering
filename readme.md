@@ -4,9 +4,16 @@ K-means clustering is an image clustering algorithm that segments the pixels in 
 
 ## Usage
 
-1. Load any JPG or PNG image using the Load Image button.
-1. Choose a number of clusters to compute for each color space, and click the Compute button. The resulting images will begin clustering using each color space as the distance computation.
+1. Load any JPG or PNG image using the Open button.
+1. Choose the configuration options you'd like to render with, then click the Compute button. The resulting images will begin clustering using each color space as the distance computation.
 1. When clustering is complete, each resulting image is shown, along with the color histogram sorted by prominence and weighted by pixel count.
+
+## Options
+**Cluster count** chooses how many resulting colors will be in the color palette for the final image.
+
+**Show Every Iteration** will render the image after each iteration of clustering is complete. Thi slows down the overall progress, but allows you to see how the clusters are generated.
+
+**Run In Parallel** will compute the sRGB, CIELUV, and CIELAB images at the same time. The algorithm itself is parallelized, and each pixel format's clustering will already utilize multiple CPU cores.
 
 ![Final results](images/ClusterResults.png)
 
