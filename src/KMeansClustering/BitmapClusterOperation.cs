@@ -82,7 +82,7 @@ namespace KMeansClustering
             this.fileSuffix = fileSuffix;
         }
 
-        public async Task RunAsync(StandardRgbBitmap sourceBitmap, int clusters, string originalFileName)
+        public async Task RunAsync(StandardRgbBitmap sourceBitmap, int clusters, string originalFileName, bool showAllSteps)
         {
             this.originalFileName = originalFileName;
             this.Bitmap = null;
@@ -93,9 +93,12 @@ namespace KMeansClustering
             DateTime startTime = DateTime.Now;
 
             string currentStatus = "Computing clusters...";
+            Lazy<BitmapSource> currentBitmap = new Lazy<BitmapSource>(() => null);
+
             EventHandler onTick = (sender, e) =>
             {
                 Status = $"{currentStatus} [{DateTime.Now - startTime:mm\\:ss}]";
+                Bitmap = currentBitmap.Value;
             };
 
             DispatcherTimer timer = new DispatcherTimer(TimeSpan.FromMilliseconds(100), DispatcherPriority.Normal, onTick, Dispatcher.CurrentDispatcher);
@@ -106,13 +109,19 @@ namespace KMeansClustering
             {
                 currentStatus = "Creating initial 16-cluster seed... (iteration 0)";
                 targetBitmap = new BitmapCluster(sourceBitmap.Pixels, colorSpace, 16);
-                await targetBitmap.ClusterAsync(i =>
+                await targetBitmap.ClusterAsync(async i =>
                 {
                     currentStatus = $"Creating initial 16-cluster seed... (iteration {i})";
+                    if (showAllSteps)
+                    {
+                        var currentBitmapContent = await targetBitmap.RenderAsync();
+                        currentBitmap = new Lazy<BitmapSource>(() => new StandardRgbBitmap(currentBitmapContent, sourceBitmap.Width, sourceBitmap.Height, sourceBitmap.DpiX, sourceBitmap.DpiY).ToBitmapSource());
+                    }
                 }, 3);
 
                 currentStatus = $"Rendering 16-cluster image...";
-                Bitmap = new StandardRgbBitmap(await targetBitmap.RenderAsync(), sourceBitmap.Width, sourceBitmap.Height, sourceBitmap.DpiX, sourceBitmap.DpiY).ToBitmapSource();
+                var intermediateBitmapContent = await targetBitmap.RenderAsync();
+                currentBitmap = new Lazy<BitmapSource>(() => new StandardRgbBitmap(intermediateBitmapContent, sourceBitmap.Width, sourceBitmap.Height, sourceBitmap.DpiX, sourceBitmap.DpiY).ToBitmapSource());
 
                 currentStatus = $"Choosing refined seed colors...";
                 var newSeedClusters = await targetBitmap.ChooseDifferentiatedClusters(clusters);
@@ -124,13 +133,20 @@ namespace KMeansClustering
             }
 
             currentStatus = $"Computing {clusters}-cluster image... (iteration 0)";
-            await targetBitmap.ClusterAsync(i =>
+            await targetBitmap.ClusterAsync(async i =>
             {
                 currentStatus = $"Computing {clusters}-cluster image... (iteration {i})";
+                if (showAllSteps)
+                {
+                    var currentBitmapContent = await targetBitmap.RenderAsync();
+                    currentBitmap = new Lazy<BitmapSource>(() => new StandardRgbBitmap(currentBitmapContent, sourceBitmap.Width, sourceBitmap.Height, sourceBitmap.DpiX, sourceBitmap.DpiY).ToBitmapSource());
+                }
             }, 200);
 
             currentStatus = $"Rendering {clusters}-cluster image...";
-            Bitmap = new StandardRgbBitmap(await targetBitmap.RenderAsync(), sourceBitmap.Width, sourceBitmap.Height, sourceBitmap.DpiX, sourceBitmap.DpiY).ToBitmapSource();
+            var finalBitmapContent = await targetBitmap.RenderAsync();
+            currentBitmap = new Lazy<BitmapSource>(() => new StandardRgbBitmap(finalBitmapContent, sourceBitmap.Width, sourceBitmap.Height, sourceBitmap.DpiX, sourceBitmap.DpiY).ToBitmapSource());
+            Bitmap = currentBitmap.Value;
 
             var weights = targetBitmap.ClusterWeights;
             var colors = targetBitmap.ClusterMeans;

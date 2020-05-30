@@ -69,10 +69,24 @@ namespace KMeansClustering
 
             StandardRgbBitmap sourceBitmap = sourceImage.ToStandardRgbBitmap();
 
-            await Task.WhenAll(
-                rgbOperation.RunAsync(sourceBitmap, clusters, originalFileName),
-                cieLuvOperation.RunAsync(sourceBitmap, clusters, originalFileName),
-                cieLabOperation.RunAsync(sourceBitmap, clusters, originalFileName));
+            Func<Task>[] tasks =
+            {
+                () => rgbOperation.RunAsync(sourceBitmap, clusters, originalFileName, ShowSteps.IsChecked == true),
+                () => cieLuvOperation.RunAsync(sourceBitmap, clusters, originalFileName, ShowSteps.IsChecked == true),
+                () => cieLabOperation.RunAsync(sourceBitmap, clusters, originalFileName, ShowSteps.IsChecked == true)
+            };
+
+            if (ParallelExecution.IsChecked == true)
+            {
+                await Task.WhenAll(tasks.Select(t => t()));
+            }
+            else
+            {
+                foreach (var t in tasks)
+                {
+                    await t();
+                }
+            }
 
             this.IsEnabled = true;
         }

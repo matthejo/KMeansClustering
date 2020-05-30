@@ -6,7 +6,7 @@
         xmlns:local="clr-namespace:KMeansClustering"
         mc:Ignorable="d"
         FontSize="14"
-        Title="K-Means Clustering" Height="800" Width="1000">
+        Title="K-Means Clustering" Height="800" Width="1400">
     <Window.Resources>
         <BooleanToVisibilityConverter x:Key="BooleanToVisibilityConverter" />
 
@@ -36,29 +36,43 @@
             <RowDefinition Height="*" />
         </Grid.RowDefinitions>
         <Grid.ColumnDefinitions>
+            <ColumnDefinition Width="240" />
             <ColumnDefinition Width="*" />
             <ColumnDefinition Width="*" />
         </Grid.ColumnDefinitions>
 
-        <Border Grid.Row="0" BorderBrush="LightGray" BorderThickness="1" Margin="-1,-1,0,0">
+        <Border DockPanel.Dock="Top" BorderBrush="LightGray" BorderThickness="1" Margin="-1,-1,0,0" Grid.RowSpan="2">
+            <StackPanel Orientation="Vertical" Margin="0">
+                <Border Background="#EEEEEE">
+                    <Label Content="Options" HorizontalAlignment="Left" FontSize="16" FontWeight="Bold" DockPanel.Dock="Left" Width="100" Margin="8,8,20,8"/>
+                </Border>
+
+                <StackPanel x:Name="ComputeOptions" IsEnabled="False" Margin="8,8,24,8" >
+                    <DockPanel LastChildFill="True">
+                        <Label Content="Cluster count:" Margin="0,8" DockPanel.Dock="Left" />
+                        <TextBox x:Name="ClusterCount" Text="4" MinWidth="70" HorizontalAlignment="Left" Margin="8" />
+                    </DockPanel>
+                    <CheckBox x:Name="ShowSteps" Content="Show Every Iteration" Margin="0,8" />
+                    <CheckBox x:Name="ParallelExecution" Content="Run In Parallel" Margin="0,8" />
+                    <Button Content="Compute" Click="Compute" Margin="0,8" MinWidth="72" Padding="8,4"/>
+                </StackPanel>
+            </StackPanel>
+        </Border>
+
+        <Border Grid.Row="0" BorderBrush="LightGray" Grid.Column="1" BorderThickness="1" Margin="-1,-1,0,0">
             <DockPanel LastChildFill="True">
                 <Border DockPanel.Dock="Top" Background="#EEEEEE">
                     <DockPanel LastChildFill="False">
                         <Label Content="Original" FontSize="16" FontWeight="Bold" Margin="8,8,20,8" DockPanel.Dock="Left"/>
-                        <StackPanel DockPanel.Dock="Right" Orientation="Horizontal" Margin="0,8" x:Name="ComputeOptions" IsEnabled="False">
-                            <Label Content="Cluster count:" Margin="8,0" DockPanel.Dock="Right" />
-                            <TextBox x:Name="ClusterCount" Text="4" MinWidth="70" Margin="0" DockPanel.Dock="Right" VerticalContentAlignment="Center"/>
-                            <Button Content="Compute" Click="Compute" Margin="8,0" MinWidth="72" Padding="8,4"/>
-                        </StackPanel>
-                        <Button Content="Load Image" Click="LoadImage" Margin="8" DockPanel.Dock="Right" MinWidth="72" Padding="8,4"/>
+                        <Button Content="Open" Click="LoadImage" Margin="8" MinWidth="72" Padding="8,4" DockPanel.Dock="Right"/>
                     </DockPanel>
                 </Border>
                 <Image x:Name="OriginalImage" Stretch="Uniform"  />
             </DockPanel>
         </Border>
-        
-        <ContentControl x:Name="sRGB" Grid.Row="0" Grid.Column="1" ContentTemplate="{StaticResource ClusterOperationTemplate}" />
-        <ContentControl x:Name="CIELuv" Grid.Row="1" Grid.Column="0" ContentTemplate="{StaticResource ClusterOperationTemplate}" />
-        <ContentControl x:Name="CIELab" Grid.Row="1" Grid.Column="1" ContentTemplate="{StaticResource ClusterOperationTemplate}" />
+
+        <ContentControl x:Name="sRGB" Grid.Row="0" Grid.Column="2" ContentTemplate="{StaticResource ClusterOperationTemplate}" />
+        <ContentControl x:Name="CIELuv" Grid.Row="1" Grid.Column="1" ContentTemplate="{StaticResource ClusterOperationTemplate}" />
+        <ContentControl x:Name="CIELab" Grid.Row="1" Grid.Column="2" ContentTemplate="{StaticResource ClusterOperationTemplate}" />
     </Grid>
 </Window>
