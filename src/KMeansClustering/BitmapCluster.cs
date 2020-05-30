@@ -58,12 +58,12 @@ namespace KMeansClustering
 
                 for (int differentClusterIndex = 1; differentClusterIndex < differentiatedClusters.Length; differentClusterIndex++)
                 {
-                    double highestDistance = 0;
+                    float highestDistance = 0;
                     int bestCluster = -1;
 
                     for (int clusterIndex = 0; clusterIndex < this.clusterMeans.Length; clusterIndex++)
                     {
-                        double minDistance = double.MaxValue;
+                        float minDistance = float.MaxValue;
                         for (int previousDifferentClusterIndex = 0; previousDifferentClusterIndex < differentClusterIndex; previousDifferentClusterIndex++)
                         {
                             minDistance = Math.Min(minDistance, Vector3.DistanceSquared(clusterMeans[clusterIndex], differentiatedClusters[previousDifferentClusterIndex]));
@@ -113,20 +113,19 @@ namespace KMeansClustering
 
         private bool IterateNextCluster(Vector3[] clusterMeans, int[] clusterAssigments)
         {
-            ColorAverageAccumulator[] accumulatedSamples = new ColorAverageAccumulator[clusterMeans.Length];
             for (int i = 0; i < clusterWeights.Length; i++)
             {
                 clusterWeights[i] = 0;
             }
 
-            for (int pixelIndex = 0; pixelIndex < pixels.Length; pixelIndex++)
+            Parallel.For(0, pixels.Length, pixelIndex =>
             {
                 int bestCluster = -1;
-                double bestDistance = double.MaxValue;
+                float bestDistance = float.MaxValue;
 
                 for (int clusterIndex = 0; clusterIndex < clusterMeans.Length; clusterIndex++)
                 {
-                    double distance = Vector3.DistanceSquared(clusterMeans[clusterIndex], pixels[pixelIndex]);
+                    float distance = Vector3.DistanceSquared(clusterMeans[clusterIndex], pixels[pixelIndex]);
                     if (distance < bestDistance)
                     {
                         bestCluster = clusterIndex;
@@ -135,8 +134,13 @@ namespace KMeansClustering
                 }
 
                 clusterAssigments[pixelIndex] = bestCluster;
-                clusterWeights[bestCluster]++;
-                accumulatedSamples[bestCluster].AddSample(pixels[pixelIndex]);
+                Interlocked.Increment(ref clusterWeights[bestCluster]);
+            });
+
+            ColorAverageAccumulator[] accumulatedSamples = new ColorAverageAccumulator[clusterMeans.Length];
+            for (int pixelIndex = 0; pixelIndex < pixels.Length; pixelIndex++)
+            {
+                accumulatedSamples[clusterAssigments[pixelIndex]].AddSample(pixels[pixelIndex]);
             }
 
             bool isComplete = true;
