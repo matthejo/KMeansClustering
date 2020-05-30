@@ -172,20 +172,25 @@ namespace KMeansClustering
             // Randomly choose a first cluster point
             clusterMeans[0] = pixels[random.Next(pixels.Length)];
 
-            double[] weightedProbabilities = new double[pixels.Length];
+            float[] weightedProbabilities = new float[pixels.Length];
+            float[,] pixelDistances = new float[pixels.Length, clusterCount - 1];
 
             for (int clusterIndex = 1; clusterIndex < clusterMeans.Length; clusterIndex++)
             {
                 // Choose a cluster point based on k-means++, where the weighted probability of the point being chosen is associated with its
                 // squared distance from the nearest existing point.
 
-                double totalDistances = 0;
+                float totalDistances = 0;
                 for (int pixelIndex = 0; pixelIndex < pixels.Length; pixelIndex++)
                 {
-                    double closestDistance = double.MaxValue;
+                    pixelDistances[pixelIndex, clusterIndex - 1] = Vector3.DistanceSquared(clusterMeans[clusterIndex - 1], pixels[pixelIndex]);
+                    float closestDistance = float.MaxValue;
                     for (int previousClusterIndex = 0; previousClusterIndex < clusterIndex; previousClusterIndex++)
                     {
-                        closestDistance = Math.Min(closestDistance, Vector3.DistanceSquared(clusterMeans[previousClusterIndex], pixels[pixelIndex]));
+                        if (pixelDistances[pixelIndex, previousClusterIndex] < closestDistance)
+                        {
+                            closestDistance = pixelDistances[pixelIndex, previousClusterIndex];
+                        }
                     }
                     weightedProbabilities[pixelIndex] = closestDistance;
                     totalDistances += closestDistance;
