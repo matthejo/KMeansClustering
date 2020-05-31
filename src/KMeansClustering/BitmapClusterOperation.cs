@@ -115,13 +115,13 @@ namespace KMeansClustering
                     if (showAllSteps)
                     {
                         var currentBitmapContent = await targetBitmap.RenderAsync();
-                        currentBitmap = new Lazy<BitmapSource>(() => new StandardRgbBitmap(currentBitmapContent, sourceBitmap.Width, sourceBitmap.Height, sourceBitmap.DpiX, sourceBitmap.DpiY).ToBitmapSource());
+                        currentBitmap = CreateLazyBitmap(sourceBitmap, currentBitmapContent, targetBitmap.GetClusterWeights(), targetBitmap.GetClusterMeans());
                     }
                 }, 3);
 
                 currentStatus = $"Rendering 16-cluster image...";
                 var intermediateBitmapContent = await targetBitmap.RenderAsync();
-                currentBitmap = new Lazy<BitmapSource>(() => new StandardRgbBitmap(intermediateBitmapContent, sourceBitmap.Width, sourceBitmap.Height, sourceBitmap.DpiX, sourceBitmap.DpiY).ToBitmapSource());
+                currentBitmap = CreateLazyBitmap(sourceBitmap, intermediateBitmapContent, targetBitmap.GetClusterWeights(), targetBitmap.GetClusterMeans());
 
                 currentStatus = $"Choosing refined seed colors...";
                 var newSeedClusters = await targetBitmap.ChooseDifferentiatedClusters(clusters);
@@ -139,27 +139,36 @@ namespace KMeansClustering
                 if (showAllSteps)
                 {
                     var currentBitmapContent = await targetBitmap.RenderAsync();
-                    currentBitmap = new Lazy<BitmapSource>(() => new StandardRgbBitmap(currentBitmapContent, sourceBitmap.Width, sourceBitmap.Height, sourceBitmap.DpiX, sourceBitmap.DpiY).ToBitmapSource());
+                    currentBitmap = CreateLazyBitmap(sourceBitmap, currentBitmapContent, targetBitmap.GetClusterWeights(), targetBitmap.GetClusterMeans());
                 }
             }, 200);
 
             currentStatus = $"Rendering {clusters}-cluster image...";
             var finalBitmapContent = await targetBitmap.RenderAsync();
-            currentBitmap = new Lazy<BitmapSource>(() => new StandardRgbBitmap(finalBitmapContent, sourceBitmap.Width, sourceBitmap.Height, sourceBitmap.DpiX, sourceBitmap.DpiY).ToBitmapSource());
+            currentBitmap = CreateLazyBitmap(sourceBitmap, finalBitmapContent, targetBitmap.GetClusterWeights(), targetBitmap.GetClusterMeans());
             Bitmap = currentBitmap.Value;
-
-            var weights = targetBitmap.ClusterWeights;
-            var colors = targetBitmap.ClusterMeans;
-
-            var sortedByWeight = weights.Zip(colors, (w, c) => new { Weight = w, Color = c }).OrderByDescending(t => t.Weight).ToArray();
-
-            ColorWeights = sortedByWeight.Select(t => t.Weight).ToArray();
-            Colors = sortedByWeight.Select(t => t.Color.ToWindowsColor()).ToArray();
 
             timer.Stop();
             Status = null;
             IsRunning = false;
             IsComplete = true;
+        }
+
+        private Lazy<BitmapSource> CreateLazyBitmap(StandardRgbBitmap sourceBitmap, StandardRgbColor[] colors, int[] clusterWeights, StandardRgbColor[] clusterColors)
+        {
+            return new Lazy<BitmapSource>(() =>
+            {
+                UpdateColorHistogram(clusterWeights, clusterColors);
+                return new StandardRgbBitmap(colors, sourceBitmap.Width, sourceBitmap.Height, sourceBitmap.DpiX, sourceBitmap.DpiY).ToBitmapSource();
+            });
+        }
+
+        private void UpdateColorHistogram(int[] weights, StandardRgbColor[] colors)
+        {
+            var sortedByWeight = weights.Zip(colors, (w, c) => new { Weight = w, Color = c }).OrderByDescending(t => t.Weight).ToArray();
+
+            ColorWeights = sortedByWeight.Select(t => t.Weight).ToArray();
+            Colors = sortedByWeight.Select(t => t.Color.ToWindowsColor()).ToArray();
         }
 
         private void SetProperty<T>(ref T field, T value, [CallerMemberName] string propertyName = null)

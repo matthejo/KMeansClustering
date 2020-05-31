@@ -18,8 +18,15 @@ namespace KMeansClustering
         private Vector3[] clusterMeans;
         private Vector3[] pixels;
 
-        public int[] ClusterWeights => clusterWeights;
-        public StandardRgbColor[] ClusterMeans => clusterMeans.Select(p => colorSpace.ConvertToStandardRgb(p)).ToArray();
+        public int[] GetClusterWeights()
+        {
+            return clusterWeights.ToArray();
+        }
+
+        public StandardRgbColor[] GetClusterMeans()
+        {
+            return clusterMeans.Select(p => colorSpace.ConvertToStandardRgb(p)).ToArray();
+        }
 
         public BitmapCluster(StandardRgbColor[] pixels, IColorSpace colorSpace, Vector3[] initialClusterSeeds)
         {
