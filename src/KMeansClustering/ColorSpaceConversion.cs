@@ -65,9 +65,9 @@ namespace KMeansClustering
         {
             return new StandardRgbColor
             {
-                R = (byte)Math.Round(convertLinearToGamma(source.R) * 255),
-                G = (byte)Math.Round(convertLinearToGamma(source.G) * 255),
-                B = (byte)Math.Round(convertLinearToGamma(source.B) * 255)
+                R = (byte)Math.Max(0, Math.Min(255, Math.Round(convertLinearToGamma(source.R) * 255))),
+                G = (byte)Math.Max(0, Math.Min(255, Math.Round(convertLinearToGamma(source.G) * 255))),
+                B = (byte)Math.Max(0, Math.Min(255, Math.Round(convertLinearToGamma(source.B) * 255)))
             };
 
             double convertLinearToGamma(double u)

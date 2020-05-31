@@ -32,9 +32,9 @@ namespace KMeansClustering
         {
             return new StandardRgbColor
             {
-                R = (byte)Math.Round(source.X),
-                G = (byte)Math.Round(source.Y),
-                B = (byte)Math.Round(source.Z)
+                R = (byte)Math.Max(0, Math.Min(255, Math.Round(source.X))),
+                G = (byte)Math.Max(0, Math.Min(255, Math.Round(source.Y))),
+                B = (byte)Math.Max(0, Math.Min(255, Math.Round(source.Z)))
             };
         }
     }
