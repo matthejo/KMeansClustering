@@ -22,6 +22,7 @@ namespace KMeansClustering
         private BitmapClusterOperation rgbOperation;
         private BitmapSource sourceImage;
         private string originalFileName;
+        private BitmapBatchClusterOperation[] batchOperations;
 
         public MainWindow()
         {
@@ -36,6 +37,42 @@ namespace KMeansClustering
             CIELab.Content = cieLabOperation;
         }
 
+        public bool IsInBatchMode
+        {
+            get { return (bool)GetValue(IsInBatchModeProperty); }
+            set { SetValue(IsInBatchModeProperty, value); }
+        }
+
+        // Using a DependencyProperty as the backing store for IsInBatchMode.  This enables animation, styling, binding, etc...
+        public static readonly DependencyProperty IsInBatchModeProperty =
+            DependencyProperty.Register("IsInBatchMode", typeof(bool), typeof(MainWindow), new PropertyMetadata(false));
+
+
+
+        public bool CanCompute
+        {
+            get { return (bool)GetValue(CanComputeProperty); }
+            set { SetValue(CanComputeProperty, value); }
+        }
+
+        // Using a DependencyProperty as the backing store for CanCompute.  This enables animation, styling, binding, etc...
+        public static readonly DependencyProperty CanComputeProperty =
+            DependencyProperty.Register("CanCompute", typeof(bool), typeof(MainWindow), new PropertyMetadata(false));
+
+
+
+        public bool CanLoad
+        {
+            get { return (bool)GetValue(CanLoadProperty); }
+            set { SetValue(CanLoadProperty, value); }
+        }
+
+        // Using a DependencyProperty as the backing store for CanLoad.  This enables animation, styling, binding, etc...
+        public static readonly DependencyProperty CanLoadProperty =
+            DependencyProperty.Register("CanLoad", typeof(bool), typeof(MainWindow), new PropertyMetadata(true));
+
+
+
         private void LoadImage(object sender, RoutedEventArgs e)
         {
             OpenFileDialog dialog = new OpenFileDialog
@@ -44,10 +81,27 @@ namespace KMeansClustering
             };
             if (dialog.ShowDialog() == true)
             {
+                IsInBatchMode = false;
                 originalFileName = IOPath.GetFileNameWithoutExtension(dialog.FileName);
                 sourceImage = BitmapFrame.Create(new Uri(dialog.FileName), BitmapCreateOptions.None, BitmapCacheOption.Default);
                 OriginalImage.Source = sourceImage;
-                ComputeOptions.IsEnabled = true;
+                CanCompute = true;
+            }
+        }
+
+        private void LoadBatchImages(object sender, RoutedEventArgs e)
+        {
+            OpenFileDialog dialog = new OpenFileDialog
+            {
+                Filter = "Images|*.jpg;*.png",
+                Multiselect = true,
+            };
+            if (dialog.ShowDialog() == true)
+            {
+                IsInBatchMode = true;
+                batchOperations = dialog.FileNames.Select(fn => new BitmapBatchClusterOperation(fn, fn, ColorSpaces.CieLab)).ToArray();
+                BatchItems.ItemsSource = batchOperations;
+                CanCompute = true;
             }
         }
 
@@ -65,8 +119,33 @@ namespace KMeansClustering
                 return;
             }
 
-            this.IsEnabled = false;
+            this.CanLoad = false;
+            this.CanCompute = false;
 
+            if (IsInBatchMode)
+            {
+                await ComputeBatch(clusters);
+            }
+            else
+            {
+                await ComputeSingle(clusters);
+            }
+
+            this.CanLoad = true;
+            this.CanCompute = true;
+        }
+
+        private async Task ComputeBatch(int clusters)
+        {
+            foreach (BitmapBatchClusterOperation operation in batchOperations)
+            {
+                BatchItems.ScrollIntoView(operation);
+                await operation.RunAsync(clusters);
+            }
+        }
+
+        private async Task ComputeSingle(int clusters)
+        {
             StandardRgbBitmap sourceBitmap = sourceImage.ToStandardRgbBitmap();
 
             Func<Task>[] tasks =
@@ -87,8 +166,6 @@ namespace KMeansClustering
                     await t();
                 }
             }
-
-            this.IsEnabled = true;
         }
     }
 }

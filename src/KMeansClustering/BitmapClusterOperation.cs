@@ -14,20 +14,18 @@ using System.Windows.Threading;
 
 namespace KMeansClustering
 {
-    internal class BitmapClusterOperation : INotifyPropertyChanged
+    internal class BitmapClusterOperation : NotifyPropertyChanged
     {
         private readonly IColorSpace colorSpace;
         private readonly string fileSuffix;
         private string status;
         private bool isRunning;
         private bool isComplete;
-        private BitmapSource bitmap;
+        private readonly WeakReference<BitmapSource> bitmap = new WeakReference<BitmapSource>(null);
         private IList<int> colorWeights;
         private IList<Color> colors;
 
         private string originalFileName;
-
-        public event PropertyChangedEventHandler PropertyChanged;
 
         public string OperationName { get; }
 
@@ -51,8 +49,21 @@ namespace KMeansClustering
 
         public BitmapSource Bitmap
         {
-            get { return bitmap; }
-            set { SetProperty(ref bitmap, value); }
+            get
+            {
+                if (bitmap.TryGetTarget(out BitmapSource strongRef))
+                {
+                    return strongRef;
+                }
+
+                return null;
+            }
+            set
+            {
+                BitmapSourceStrongReferenceCache.RefreshReference(value);
+                bitmap.SetTarget(value);
+                OnPropertyChanged();
+            }
         }
 
         public IList<int> ColorWeights
@@ -169,15 +180,6 @@ namespace KMeansClustering
 
             ColorWeights = sortedByWeight.Select(t => t.Weight).ToArray();
             Colors = sortedByWeight.Select(t => t.Color.ToWindowsColor()).ToArray();
-        }
-
-        private void SetProperty<T>(ref T field, T value, [CallerMemberName] string propertyName = null)
-        {
-            if (!object.Equals(field, value))
-            {
-                field = value;
-                PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(propertyName));
-            }
         }
 
         private void OnSave()

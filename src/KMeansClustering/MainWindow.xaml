@@ -5,10 +5,12 @@
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
         xmlns:local="clr-namespace:KMeansClustering"
         mc:Ignorable="d"
+        x:Name="Root"
         FontSize="14"
         Title="K-Means Clustering" Height="800" Width="1400">
     <Window.Resources>
         <BooleanToVisibilityConverter x:Key="BooleanToVisibilityConverter" />
+        <local:BooleanToCollapsedConverter x:Key="BooleanToCollapsedConverter" />
 
         <DataTemplate x:Key="ClusterOperationTemplate">
             <Border Grid.Row="1" Grid.Column="1" Background="White" BorderBrush="LightGray" BorderThickness="1" Margin="-1,-1,0,0" x:Name="CIELabBorder">
@@ -32,6 +34,7 @@
     </Window.Resources>
     <Grid Margin="8">
         <Grid.RowDefinitions>
+            <RowDefinition Height="Auto" />
             <RowDefinition Height="*" />
             <RowDefinition Height="*" />
         </Grid.RowDefinitions>
@@ -41,13 +44,56 @@
             <ColumnDefinition Width="*" />
         </Grid.ColumnDefinitions>
 
-        <Border DockPanel.Dock="Top" BorderBrush="LightGray" BorderThickness="1" Margin="-1,-1,0,0" Grid.RowSpan="2">
+        <StackPanel Grid.Row="0" Grid.ColumnSpan="2" Orientation="Horizontal" Margin="-1,-1,0,0" IsEnabled="{Binding ElementName=Root, Path=CanLoad}">
+            <Button Content="Open" Click="LoadImage" Margin="8" MinWidth="72" Padding="8,4" />
+            <Button Content="Batch Process" Click="LoadBatchImages" Margin="8" MinWidth="72" Padding="8,4"/>
+        </StackPanel>
+
+
+        <Border BorderBrush="LightGray" BorderThickness="1" Margin="-1,-1,0,0" Grid.Row="1" Grid.Column="1" Grid.ColumnSpan="2" Grid.RowSpan="2" Visibility="{Binding ElementName=Root, Path=IsInBatchMode, Converter={StaticResource BooleanToVisibilityConverter}}">
+            <DockPanel LastChildFill="True">
+                <Border DockPanel.Dock="Top" Background="#EEEEEE">
+                    <DockPanel LastChildFill="False">
+                        <Label Content="Batch Processing List" FontSize="16" FontWeight="Bold" Margin="8,8,20,8" DockPanel.Dock="Left"/>
+                    </DockPanel>
+                </Border>
+                <ListBox x:Name="BatchItems" BorderThickness="0" FontSize="16" HorizontalContentAlignment="Stretch">
+                    <ItemsControl.ItemTemplate>
+                        <DataTemplate>
+                            <Grid>
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="Auto" />
+                                    <ColumnDefinition Width="Auto" />
+                                    <ColumnDefinition Width="350" />
+                                    <ColumnDefinition Width="*" />
+                                </Grid.ColumnDefinitions>
+                                <Border Background="LightGray" Width="90" Height="60" Margin="0,0,4,0" >
+                                    <Image Stretch="UniformToFill"  Source="{Binding OriginalImage}" />
+                                </Border>
+                                <Border Background="LightGray" Width="90" Height="60" Margin="0,0,8,0" Grid.Column="1" >
+                                    <Image Stretch="UniformToFill" Source="{Binding ComputedImage}" />
+                                </Border>
+                                <TextBlock Grid.Column="2" Text="{Binding OriginalFileName}" Margin="4" TextTrimming="CharacterEllipsis" VerticalAlignment="Center" />
+                                <Grid Margin="2,4,8,4" MinHeight="30" Grid.Column="3">
+                                    <Grid x:Name="CIELabColorSlices" HorizontalAlignment="Stretch" local:GridColorHistogramProperties.ColumnWidths="{Binding ColorWeights}" local:GridColorHistogramProperties.ColorValues="{Binding Colors}"
+                                      Visibility="{Binding Path=IsComplete, Converter={StaticResource BooleanToVisibilityConverter}}"/>
+                                    <ProgressBar Grid.Column="1" Width="160" Height="20" HorizontalAlignment="Left" VerticalAlignment="Center" IsIndeterminate="True" Visibility="{Binding Path=IsRunning, Converter={StaticResource BooleanToVisibilityConverter}}" />
+                                </Grid>
+                            </Grid>
+                        </DataTemplate>
+                    </ItemsControl.ItemTemplate>
+                </ListBox>
+            </DockPanel>
+        </Border>
+
+
+        <Border DockPanel.Dock="Top" BorderBrush="LightGray" BorderThickness="1" Margin="-1,-1,0,0" Grid.RowSpan="2" Grid.Row="1">
             <StackPanel Orientation="Vertical" Margin="0">
                 <Border Background="#EEEEEE">
                     <Label Content="Options" HorizontalAlignment="Left" FontSize="16" FontWeight="Bold" DockPanel.Dock="Left" Width="100" Margin="8,8,20,8"/>
                 </Border>
 
-                <StackPanel x:Name="ComputeOptions" IsEnabled="False" Margin="8,8,24,8" >
+                <StackPanel x:Name="ComputeOptions" IsEnabled="{Binding ElementName=Root, Path=CanCompute}" Margin="8,8,24,8" >
                     <DockPanel LastChildFill="True">
                         <Label Content="Cluster count:" Margin="0,8" DockPanel.Dock="Left" />
                         <TextBox x:Name="ClusterCount" Text="4" MinWidth="70" HorizontalAlignment="Left" Margin="8" />
@@ -59,20 +105,19 @@
             </StackPanel>
         </Border>
 
-        <Border Grid.Row="0" BorderBrush="LightGray" Grid.Column="1" BorderThickness="1" Margin="-1,-1,0,0">
+        <Border Grid.Row="1" BorderBrush="LightGray" Grid.Column="1" BorderThickness="1" Margin="-1,-1,0,0" Visibility="{Binding ElementName=Root, Path=IsInBatchMode, Converter={StaticResource BooleanToCollapsedConverter}}">
             <DockPanel LastChildFill="True">
                 <Border DockPanel.Dock="Top" Background="#EEEEEE">
                     <DockPanel LastChildFill="False">
                         <Label Content="Original" FontSize="16" FontWeight="Bold" Margin="8,8,20,8" DockPanel.Dock="Left"/>
-                        <Button Content="Open" Click="LoadImage" Margin="8" MinWidth="72" Padding="8,4" DockPanel.Dock="Right"/>
                     </DockPanel>
                 </Border>
                 <Image x:Name="OriginalImage" Stretch="Uniform"  />
             </DockPanel>
         </Border>
 
-        <ContentControl x:Name="sRGB" Grid.Row="0" Grid.Column="2" ContentTemplate="{StaticResource ClusterOperationTemplate}" />
-        <ContentControl x:Name="CIELuv" Grid.Row="1" Grid.Column="1" ContentTemplate="{StaticResource ClusterOperationTemplate}" />
-        <ContentControl x:Name="CIELab" Grid.Row="1" Grid.Column="2" ContentTemplate="{StaticResource ClusterOperationTemplate}" />
+        <ContentControl x:Name="sRGB" Grid.Row="1" Grid.Column="2" ContentTemplate="{StaticResource ClusterOperationTemplate}" Visibility="{Binding ElementName=Root, Path=IsInBatchMode, Converter={StaticResource BooleanToCollapsedConverter}}" />
+        <ContentControl x:Name="CIELuv" Grid.Row="2" Grid.Column="1" ContentTemplate="{StaticResource ClusterOperationTemplate}" Visibility="{Binding ElementName=Root, Path=IsInBatchMode, Converter={StaticResource BooleanToCollapsedConverter}}" />
+        <ContentControl x:Name="CIELab" Grid.Row="2" Grid.Column="2" ContentTemplate="{StaticResource ClusterOperationTemplate}" Visibility="{Binding ElementName=Root, Path=IsInBatchMode, Converter={StaticResource BooleanToCollapsedConverter}}" />
     </Grid>
 </Window>

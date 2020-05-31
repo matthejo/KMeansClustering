@@ -56,7 +56,10 @@
       <Generator>MSBuild:Compile</Generator>
       <SubType>Designer</SubType>
     </ApplicationDefinition>
+    <Compile Include="BitmapBatchClusterOperation.cs" />
     <Compile Include="BitmapCluster.cs" />
+    <Compile Include="BitmapSourceStrongReferenceCache.cs" />
+    <Compile Include="BooleanToCollapsedConverter.cs" />
     <Compile Include="CieLuvColor.cs" />
     <Compile Include="CieLabColor.cs" />
     <Compile Include="CieXyzColor.cs" />
@@ -64,6 +67,7 @@
     <Compile Include="ColorSpaceConversion.cs" />
     <Compile Include="GridColorHistogramProperties.cs" />
     <Compile Include="LinearRgbColor.cs" />
+    <Compile Include="NotifyPropertyChanged.cs" />
     <Compile Include="RelayCommand.cs" />
     <Compile Include="StandardRgbColor.cs" />
     <Compile Include="WpfExtensions.cs" />
