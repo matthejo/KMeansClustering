@@ -16,6 +16,7 @@ namespace KMeansClustering
     {
         private readonly WeakReference<BitmapSource> originalImage = new WeakReference<BitmapSource>(null);
         private readonly WeakReference<BitmapSource> computedImage = new WeakReference<BitmapSource>(null);
+        private string outputFileName;
         private IList<int> colorWeights;
         private IList<Color> colors;
         private bool isRunning;
@@ -89,7 +90,7 @@ namespace KMeansClustering
         {
             get
             {
-                return GetOrLoadImage(computedImage, () => null);
+                return GetOrLoadImage(computedImage, () => outputFileName == null ? null : BitmapFrame.Create(new Uri(outputFileName), BitmapCreateOptions.None, BitmapCacheOption.Default));
             }
             set
             {
@@ -110,7 +111,8 @@ namespace KMeansClustering
             var clusterOperation = new BitmapClusterOperation("batch", colorSpace, "_converted");
             await clusterOperation.RunAsync(OriginalImage.ToStandardRgbBitmap(), clusters, Path.GetFileNameWithoutExtension(OriginalFilePath), false);
 
-            clusterOperation.Bitmap.Save(GetOutputFileName(OriginalFilePath, outputDirectory, colorSpace, clusters, ".png"));
+            outputFileName = GetOutputFileName(OriginalFilePath, outputDirectory, colorSpace, clusters, ".png");
+            clusterOperation.Bitmap.Save(outputFileName);
 
             if (saveColorHistogram)
             {
