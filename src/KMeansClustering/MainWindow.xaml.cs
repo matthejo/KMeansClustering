@@ -1,4 +1,5 @@
 ﻿using Microsoft.Win32;
+using Microsoft.WindowsAPICodePack.Dialogs;
 using System;
 using System.Linq;
 using System.Threading.Tasks;
@@ -23,6 +24,7 @@ namespace KMeansClustering
         private BitmapSource sourceImage;
         private string originalFileName;
         private BitmapBatchClusterOperation[] batchOperations;
+        private string outputFolder;
 
         public MainWindow()
         {
@@ -73,14 +75,30 @@ namespace KMeansClustering
 
 
 
+        public bool HasBatchOutputDirectory
+        {
+            get { return (bool)GetValue(HasBatchOutputDirectoryProperty); }
+            set { SetValue(HasBatchOutputDirectoryProperty, value); }
+        }
+
+        // Using a DependencyProperty as the backing store for HasBatchOutputDirectory.  This enables animation, styling, binding, etc...
+        public static readonly DependencyProperty HasBatchOutputDirectoryProperty =
+            DependencyProperty.Register("HasBatchOutputDirectory", typeof(bool), typeof(MainWindow), new PropertyMetadata(false));
+
+
+
         private void LoadImage(object sender, RoutedEventArgs e)
         {
             OpenFileDialog dialog = new OpenFileDialog
             {
-                Filter = "Images|*.jpg;*.png"
+                Filter = "Images|*.jpg;*.png",
+                InitialDirectory = Settings.Default.DefaultSingleOpenFolder
             };
             if (dialog.ShowDialog() == true)
             {
+                Settings.Default.DefaultSingleOpenFolder = IOPath.GetDirectoryName(dialog.FileName);
+                Settings.Default.Save();
+
                 IsInBatchMode = false;
                 originalFileName = IOPath.GetFileNameWithoutExtension(dialog.FileName);
                 sourceImage = BitmapFrame.Create(new Uri(dialog.FileName), BitmapCreateOptions.None, BitmapCacheOption.Default);
@@ -95,11 +113,15 @@ namespace KMeansClustering
             {
                 Filter = "Images|*.jpg;*.png",
                 Multiselect = true,
+                InitialDirectory = Settings.Default.DefaultBatchOpenFolder
             };
             if (dialog.ShowDialog() == true)
             {
+                Settings.Default.DefaultBatchOpenFolder = IOPath.GetDirectoryName(dialog.FileNames[0]);
+                Settings.Default.Save();
+
                 IsInBatchMode = true;
-                batchOperations = dialog.FileNames.Select(fn => new BitmapBatchClusterOperation(fn, fn, ColorSpaces.CieLab)).ToArray();
+                batchOperations = dialog.FileNames.Select(fn => new BitmapBatchClusterOperation(fn)).ToArray();
                 BatchItems.ItemsSource = batchOperations;
                 CanCompute = true;
             }
@@ -107,8 +129,26 @@ namespace KMeansClustering
 
         private async void Compute(object sender, RoutedEventArgs e)
         {
+            this.CanLoad = false;
+            this.CanCompute = false;
+
+            if (IsInBatchMode)
+            {
+                await ComputeBatch();
+            }
+            else
+            {
+                await ComputeSingle();
+            }
+
+            this.CanLoad = true;
+            this.CanCompute = true;
+        }
+
+        private async Task ComputeBatch()
+        {
             int clusters;
-            if (!int.TryParse(ClusterCount.Text, out clusters))
+            if (!int.TryParse(ClusterCountBatch.Text, out clusters))
             {
                 MessageBox.Show("Could not parse the cluster count");
                 return;
@@ -119,33 +159,35 @@ namespace KMeansClustering
                 return;
             }
 
-            this.CanLoad = false;
-            this.CanCompute = false;
-
-            if (IsInBatchMode)
+            IColorSpace colorSpace;
+            switch (ColorSpaceBatch.SelectedIndex)
             {
-                await ComputeBatch(clusters);
-            }
-            else
-            {
-                await ComputeSingle(clusters);
+                case 0: colorSpace = ColorSpaces.Rgb; break;
+                case 1: colorSpace = ColorSpaces.CieLuv; break;
+                default: colorSpace = ColorSpaces.CieLab; break;
             }
 
-            this.CanLoad = true;
-            this.CanCompute = true;
-        }
-
-        private async Task ComputeBatch(int clusters)
-        {
             foreach (BitmapBatchClusterOperation operation in batchOperations)
             {
                 BatchItems.ScrollIntoView(operation);
-                await operation.RunAsync(clusters);
+                await operation.RunAsync(colorSpace, clusters, outputFolder, SaveColorHistogramMetadata.IsChecked == true);
             }
         }
 
-        private async Task ComputeSingle(int clusters)
+        private async Task ComputeSingle()
         {
+            int clusters;
+            if (!int.TryParse(ClusterCountSingle.Text, out clusters))
+            {
+                MessageBox.Show("Could not parse the cluster count");
+                return;
+            }
+            if (clusters < 1 || clusters > 100)
+            {
+                MessageBox.Show("Clusters must be between 1 and 100");
+                return;
+            }
+
             StandardRgbBitmap sourceBitmap = sourceImage.ToStandardRgbBitmap();
 
             Func<Task>[] tasks =
@@ -165,6 +207,25 @@ namespace KMeansClustering
                 {
                     await t();
                 }
+            }
+        }
+
+        private void ChooseBatchOutputDirectory(object sender, RoutedEventArgs e)
+        {
+            CommonOpenFileDialog openFileDialog = new CommonOpenFileDialog
+            {
+                IsFolderPicker = true,
+                InitialDirectory = Settings.Default.DefaultBatchTargetFolder
+            };
+
+            if (openFileDialog.ShowDialog() == CommonFileDialogResult.Ok)
+            {
+                Settings.Default.DefaultBatchTargetFolder = openFileDialog.FileName;
+                Settings.Default.Save();
+
+                outputFolder = openFileDialog.FileName;
+                BatchOutputDirectory.Text = outputFolder;
+                HasBatchOutputDirectory = true;
             }
         }
     }

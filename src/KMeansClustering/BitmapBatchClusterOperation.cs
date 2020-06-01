@@ -1,4 +1,5 @@
-﻿using System;
+﻿using Newtonsoft.Json;
+using System;
 using System.Collections.Generic;
 using System.ComponentModel;
 using System.IO;
@@ -96,24 +97,45 @@ namespace KMeansClustering
             }
         }
 
-        public BitmapBatchClusterOperation(string originalFilePath, string targetFilePath, IColorSpace colorSpace)
+        public BitmapBatchClusterOperation(string originalFilePath)
         {
             OriginalFilePath = originalFilePath;
             OriginalFileName = Path.GetFileName(originalFilePath);
-            ColorSpace = colorSpace;
         }
 
-        public async Task RunAsync(int clusters)
+        public async Task RunAsync(IColorSpace colorSpace, int clusters, string outputDirectory, bool saveColorHistogram)
         {
             IsComplete = false;
             IsRunning = true;
-            var clusterOperation = new BitmapClusterOperation("batch", ColorSpace, "_converted");
+            var clusterOperation = new BitmapClusterOperation("batch", colorSpace, "_converted");
             await clusterOperation.RunAsync(OriginalImage.ToStandardRgbBitmap(), clusters, Path.GetFileNameWithoutExtension(OriginalFilePath), false);
+
+            clusterOperation.Bitmap.Save(GetOutputFileName(OriginalFilePath, outputDirectory, colorSpace, clusters, ".png"));
+
+            if (saveColorHistogram)
+            {
+                string histogramOutputDirectory = Path.Combine(outputDirectory, "colorHistograms");
+                Directory.CreateDirectory(histogramOutputDirectory);
+                SaveWeightedColorsToJson(clusterOperation, histogramOutputDirectory, colorSpace, clusters);
+            }
+
             ComputedImage = clusterOperation.Bitmap;
             ColorWeights = clusterOperation.ColorWeights;
             Colors = clusterOperation.Colors;
             IsRunning = false;
             IsComplete = true;
+        }
+
+        private void SaveWeightedColorsToJson(BitmapClusterOperation clusterOperation, string outputDirectory, IColorSpace colorSpace, int clusters)
+        {
+            List<WeightedColor> colors = clusterOperation.ColorWeights.Zip(clusterOperation.Colors, (w, c) => new WeightedColor(w, c.ToStandardRgbColor())).OrderByDescending(wc => wc.PixelCount).ToList();
+            WeightedColorSet set = new WeightedColorSet(colors.Sum(c => c.PixelCount), colors);
+            File.WriteAllText(GetOutputFileName(OriginalFilePath, outputDirectory, colorSpace, clusters, ".json"), JsonConvert.SerializeObject(set));
+        }
+
+        private string GetOutputFileName(string inputFilePath, string outputDirectory, IColorSpace colorSpace, int clusterCount, string fileExtension)
+        {
+            return Path.Combine(outputDirectory, $"{Path.GetFileNameWithoutExtension(inputFilePath)}_{colorSpace.Name}@{clusterCount}{fileExtension}");
         }
     }
 }

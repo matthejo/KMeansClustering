@@ -187,11 +187,15 @@ namespace KMeansClustering
             SaveFileDialog dialog = new SaveFileDialog
             {
                 FileName = $"{originalFileName}{fileSuffix}_#{ColorWeights.Count}.png",
-                Filter = "PNG images|*.png|JPG images|*.jpg"
+                Filter = "PNG images|*.png|JPG images|*.jpg",
+                InitialDirectory = Settings.Default.DefaultSaveFolder
             };
 
             if (dialog.ShowDialog() == true)
             {
+                Settings.Default.DefaultSaveFolder = Path.GetDirectoryName(dialog.FileName);
+                Settings.Default.Save();
+
                 BitmapEncoder encoder = null;
                 if (string.Compare(Path.GetExtension(dialog.FileName), ".png", true) == 0)
                 {

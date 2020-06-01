@@ -4,6 +4,8 @@ namespace KMeansClustering
 {
     internal sealed class CieLuvColorSpace : IColorSpace
     {
+        public string Name => "CIELUV";
+
         public Vector3 ConvertFromStandardRgb(StandardRgbColor pixel)
         {
             return (Vector3)pixel.ToCieLuv();

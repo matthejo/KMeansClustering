@@ -11,6 +11,7 @@ namespace KMeansClustering
 
     internal interface IColorSpace
     {
+        string Name { get; }
         Vector3 ConvertFromStandardRgb(StandardRgbColor pixel);
         StandardRgbColor ConvertToStandardRgb(Vector3 pixel);
     }
