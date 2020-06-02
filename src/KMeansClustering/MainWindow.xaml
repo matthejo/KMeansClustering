@@ -46,7 +46,8 @@
 
         <StackPanel Grid.Row="0" Grid.ColumnSpan="2" Orientation="Horizontal" Margin="-1,-1,0,0" IsEnabled="{Binding ElementName=Root, Path=CanLoad}">
             <Button Content="Open" Click="LoadImage" Margin="8" MinWidth="72" Padding="8,4" />
-            <Button Content="Batch Process" Click="LoadBatchImages" Margin="8" MinWidth="72" Padding="8,4"/>
+            <Button Content="Batch Process Files" Click="LoadBatchImages" Margin="8" MinWidth="72" Padding="8,4"/>
+            <Button Content="Batch Process Directory" Click="LoadBatchImagesDirectory" Margin="8" MinWidth="72" Padding="8,4"/>
         </StackPanel>
 
 

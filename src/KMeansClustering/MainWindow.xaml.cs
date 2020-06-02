@@ -1,6 +1,7 @@
 ﻿using Microsoft.Win32;
 using Microsoft.WindowsAPICodePack.Dialogs;
 using System;
+using System.IO;
 using System.Linq;
 using System.Threading.Tasks;
 using System.Windows;
@@ -122,6 +123,28 @@ namespace KMeansClustering
 
                 IsInBatchMode = true;
                 batchOperations = dialog.FileNames.Select(fn => new BitmapBatchClusterOperation(fn)).ToArray();
+                BatchItems.ItemsSource = batchOperations;
+                CanCompute = true;
+            }
+        }
+
+        private void LoadBatchImagesDirectory(object sender, RoutedEventArgs e)
+        {
+            CommonOpenFileDialog openFileDialog = new CommonOpenFileDialog
+            {
+                IsFolderPicker = true,
+                InitialDirectory = Settings.Default.DefaultBatchOpenFolder
+            };
+            if (openFileDialog.ShowDialog() == CommonFileDialogResult.Ok)
+            {
+                Settings.Default.DefaultBatchOpenFolder = openFileDialog.FileName;
+                Settings.Default.Save();
+
+                IsInBatchMode = true;
+
+                string[] fileNames = Directory.GetFiles(openFileDialog.FileName, "*.png", SearchOption.TopDirectoryOnly).Concat(Directory.GetFiles(openFileDialog.FileName, "*.jpg")).OrderBy(s => s).ToArray();
+
+                batchOperations = fileNames.Select(fn => new BitmapBatchClusterOperation(fn)).ToArray();
                 BatchItems.ItemsSource = batchOperations;
                 CanCompute = true;
             }
