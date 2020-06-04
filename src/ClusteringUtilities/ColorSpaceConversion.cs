@@ -3,7 +3,7 @@ using System.Numerics;
 
 namespace KMeansClustering
 {
-    internal static class ColorSpaceConversion
+    public static class ColorSpaceConversion
     {
         private static class CieConstants
         {

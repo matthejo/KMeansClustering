@@ -6,7 +6,7 @@ using System.Threading.Tasks;
 
 namespace KMeansClustering
 {
-    internal sealed class WeightedColor
+    public sealed class WeightedColor
     {
         public int PixelCount { get; set; }
         public StandardRgbColor Color { get; set; }
@@ -18,7 +18,7 @@ namespace KMeansClustering
         }
     }
 
-    internal sealed class WeightedColorSet
+    public sealed class WeightedColorSet
     {
         public List<WeightedColor> Colors { get; set; }
 

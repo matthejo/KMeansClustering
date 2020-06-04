@@ -1,6 +1,6 @@
 ﻿namespace KMeansClustering
 {
-    internal struct CieXyzColor
+    public struct CieXyzColor
     {
         public float X;
         public float Y;

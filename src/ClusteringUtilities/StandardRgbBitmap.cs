@@ -1,6 +1,6 @@
 ﻿namespace KMeansClustering
 {
-    internal sealed class StandardRgbBitmap
+    public sealed class StandardRgbBitmap
     {
         public StandardRgbColor[] Pixels { get; }
 

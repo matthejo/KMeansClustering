@@ -4,7 +4,7 @@ using System.Windows.Media.Imaging;
 
 namespace KMeansClustering
 {
-    internal static class WpfExtensions
+    public static class WpfExtensions
     {
         public static StandardRgbBitmap ToStandardRgbBitmap(this BitmapSource bitmap)
         {

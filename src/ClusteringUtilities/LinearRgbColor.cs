@@ -1,6 +1,6 @@
 ﻿namespace KMeansClustering
 {
-    internal struct LinearRgbColor
+    public struct LinearRgbColor
     {
         public float R;
         public float G;

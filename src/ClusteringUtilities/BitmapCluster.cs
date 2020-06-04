@@ -6,7 +6,7 @@ using System.Threading.Tasks;
 
 namespace KMeansClustering
 {
-    internal sealed class BitmapCluster
+    public sealed class BitmapCluster
     {
         private const double Epsilon = 0.00001;
 

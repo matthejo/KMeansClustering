@@ -69,16 +69,10 @@
       <SubType>Designer</SubType>
     </ApplicationDefinition>
     <Compile Include="BitmapBatchClusterOperation.cs" />
-    <Compile Include="BitmapCluster.cs" />
     <Compile Include="BitmapSourceStrongReferenceCache.cs" />
     <Compile Include="BooleanToCollapsedConverter.cs" />
-    <Compile Include="CieLuvColor.cs" />
-    <Compile Include="CieLabColor.cs" />
-    <Compile Include="CieXyzColor.cs" />
     <Compile Include="BitmapClusterOperation.cs" />
-    <Compile Include="ColorSpaceConversion.cs" />
     <Compile Include="GridColorHistogramProperties.cs" />
-    <Compile Include="LinearRgbColor.cs" />
     <Compile Include="NotifyPropertyChanged.cs" />
     <Compile Include="RelayCommand.cs" />
     <Compile Include="Settings.Designer.cs">
@@ -86,9 +80,6 @@
       <DesignTimeSharedInput>True</DesignTimeSharedInput>
       <DependentUpon>Settings.settings</DependentUpon>
     </Compile>
-    <Compile Include="StandardRgbColor.cs" />
-    <Compile Include="WeightedColor.cs" />
-    <Compile Include="WpfExtensions.cs" />
     <Page Include="MainWindow.xaml">
       <Generator>MSBuild:Compile</Generator>
       <SubType>Designer</SubType>
@@ -103,8 +94,6 @@
     </Compile>
   </ItemGroup>
   <ItemGroup>
-    <Compile Include="StandardRgbBitmap.cs" />
-    <Compile Include="IColorSpace.cs" />
     <Compile Include="Properties\AssemblyInfo.cs">
       <SubType>Code</SubType>
     </Compile>
@@ -134,6 +123,12 @@
   </ItemGroup>
   <ItemGroup>
     <None Include="App.config" />
+  </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\ClusteringUtilities\ClusteringUtilities.csproj">
+      <Project>{9a6bff38-82e1-4192-acdc-aaf1ef3619f2}</Project>
+      <Name>ClusteringUtilities</Name>
+    </ProjectReference>
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
 </Project>

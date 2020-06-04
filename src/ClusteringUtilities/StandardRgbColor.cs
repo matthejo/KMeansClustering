@@ -22,7 +22,7 @@ namespace KMeansClustering
     }
 
     [JsonConverter(typeof(StandardRgbColorConverter))]
-    internal struct StandardRgbColor
+    public struct StandardRgbColor
     {
         public byte R;
         public byte G;

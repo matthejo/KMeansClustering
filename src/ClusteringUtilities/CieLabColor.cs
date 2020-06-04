@@ -18,7 +18,7 @@ namespace KMeansClustering
         }
     }
 
-    internal struct CieLabColor
+    public struct CieLabColor
     {
         public float L;
         public float a;
