@@ -1,0 +1,57 @@
+﻿<Window x:Class="KMeansClusterLayout.MainWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+        xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+        xmlns:local="clr-namespace:KMeansClusterLayout"
+        xmlns:util="clr-namespace:KMeansClustering;assembly=ClusteringUtilities"
+        mc:Ignorable="d"
+        FontSize="14"
+        Title="K-Means Cluster Layout" Height="450" Width="800">
+    <Grid Margin="8">
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto" />
+            <RowDefinition Height="Auto" />
+            <RowDefinition Height="*" />
+        </Grid.RowDefinitions>
+        <Grid.ColumnDefinitions>
+            <ColumnDefinition Width="160" />
+            <ColumnDefinition Width="*" />
+        </Grid.ColumnDefinitions>
+
+        <StackPanel Grid.Row="0" Grid.ColumnSpan="2" Orientation="Horizontal" Margin="-1,-1,0,0" IsEnabled="{Binding ElementName=Root, Path=CanLoad}">
+            <Button Content="Open Source Images" Click="LoadBatchImagesDirectory" Margin="8" MinWidth="72" Padding="8,4"/>
+            <Button Content="Find Closest Images" Click="FindClosestImages" Margin="8" MinWidth="72" Padding="8,4"/>
+            <CheckBox Content="Use Permutation For Distance" x:Name="UsePermutationForDistance" VerticalAlignment="Center" />
+        </StackPanel>
+
+        <ProgressBar Height="10" Grid.Row="1" Grid.ColumnSpan="2" x:Name="SharedProgress" Visibility="Hidden" />
+
+        <ListBox x:Name="ImageList" Grid.Row="2" Grid.Column="0">
+            <ListBox.ItemTemplate>
+                <DataTemplate>
+                    <StackPanel Width="120" Orientation="Vertical">
+                        <Image Source="{Binding OriginalImage}" Stretch="UniformToFill" Width="120" Height="80" Margin="0,1" />
+                        <Grid Height="12" util:GridColorHistogramProperties.ColumnWidths="{Binding ColorWeights}" util:GridColorHistogramProperties.ColorValues="{Binding Colors}"/>
+                    </StackPanel>
+                </DataTemplate>
+            </ListBox.ItemTemplate>
+        </ListBox>
+
+        <ItemsControl x:Name="ClosestList" Grid.Row="2" Grid.Column="1">
+            <ItemsControl.ItemsPanel>
+                <ItemsPanelTemplate>
+                    <WrapPanel />
+                </ItemsPanelTemplate>
+            </ItemsControl.ItemsPanel>
+            <ItemsControl.ItemTemplate>
+                <DataTemplate>
+                    <StackPanel Width="240" Orientation="Vertical">
+                        <Image Source="{Binding OriginalImage}" Stretch="UniformToFill" Width="240" Height="160" Margin="1" />
+                        <Grid Height="12" util:GridColorHistogramProperties.ColumnWidths="{Binding ColorWeights}" util:GridColorHistogramProperties.ColorValues="{Binding Colors}"/>
+                    </StackPanel>
+                </DataTemplate>
+            </ItemsControl.ItemTemplate>
+        </ItemsControl>
+    </Grid>
+</Window>

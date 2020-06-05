@@ -7,7 +7,7 @@ using System.Windows.Media.Imaging;
 
 namespace KMeansClustering
 {
-    internal static class BitmapSourceStrongReferenceCache
+    public static class BitmapSourceStrongReferenceCache
     {
         private static BitmapSource[] strongCache = new BitmapSource[24];
         private static int nextIndex = 0;

@@ -3,14 +3,14 @@
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
         xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
-        xmlns:local="clr-namespace:KMeansClustering"
+        xmlns:util="clr-namespace:KMeansClustering;assembly=ClusteringUtilities"
         mc:Ignorable="d"
         x:Name="Root"
         FontSize="14"
         Title="K-Means Clustering" Height="800" Width="1400">
     <Window.Resources>
         <BooleanToVisibilityConverter x:Key="BooleanToVisibilityConverter" />
-        <local:BooleanToCollapsedConverter x:Key="BooleanToCollapsedConverter" />
+        <util:BooleanToCollapsedConverter x:Key="BooleanToCollapsedConverter" />
 
         <DataTemplate x:Key="ClusterOperationTemplate">
             <Border Grid.Row="1" Grid.Column="1" Background="White" BorderBrush="LightGray" BorderThickness="1" Margin="-1,-1,0,0" x:Name="CIELabBorder">
@@ -19,7 +19,7 @@
                         <DockPanel LastChildFill="True">
                             <Label Content="{Binding OperationName}" FontSize="16" FontWeight="Bold" DockPanel.Dock="Left" Width="100" Margin="8,8,20,8"/>
                             <Button Content="Save" MinWidth="70" Padding="8,4" DockPanel.Dock="Right" Margin="8" IsEnabled="{Binding IsComplete}" Command="{Binding SaveCommand}" />
-                            <Grid x:Name="CIELabColorSlices" Margin="2,8" local:GridColorHistogramProperties.ColumnWidths="{Binding ColorWeights}" local:GridColorHistogramProperties.ColorValues="{Binding Colors}" />
+                            <Grid x:Name="CIELabColorSlices" Margin="2,8" util:GridColorHistogramProperties.ColumnWidths="{Binding ColorWeights}" util:GridColorHistogramProperties.ColorValues="{Binding Colors}" />
                         </DockPanel>
                     </Border>
                     <Grid>
@@ -76,7 +76,7 @@
                                 </Border>
                                 <TextBlock Grid.Column="2" Text="{Binding OriginalFileName}" Margin="4" TextTrimming="CharacterEllipsis" VerticalAlignment="Center" />
                                 <Grid Margin="2,4,8,4" MinHeight="30" Grid.Column="3">
-                                    <Grid x:Name="CIELabColorSlices" HorizontalAlignment="Stretch" local:GridColorHistogramProperties.ColumnWidths="{Binding ColorWeights}" local:GridColorHistogramProperties.ColorValues="{Binding Colors}"
+                                    <Grid x:Name="CIELabColorSlices" HorizontalAlignment="Stretch" util:GridColorHistogramProperties.ColumnWidths="{Binding ColorWeights}" util:GridColorHistogramProperties.ColorValues="{Binding Colors}"
                                       Visibility="{Binding Path=IsComplete, Converter={StaticResource BooleanToVisibilityConverter}}"/>
                                     <ProgressBar Grid.Column="1" Width="160" Height="20" HorizontalAlignment="Left" VerticalAlignment="Center" IsIndeterminate="True" Visibility="{Binding Path=IsRunning, Converter={StaticResource BooleanToVisibilityConverter}}" />
                                 </Grid>

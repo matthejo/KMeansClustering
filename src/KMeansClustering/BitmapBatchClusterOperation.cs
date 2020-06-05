@@ -62,7 +62,7 @@ namespace KMeansClustering
             {
                 var value = reload();
                 BitmapSourceStrongReferenceCache.RefreshReference(value);
-                originalImage.SetTarget(value);
+                weakReference.SetTarget(value);
                 return value;
             }
         }

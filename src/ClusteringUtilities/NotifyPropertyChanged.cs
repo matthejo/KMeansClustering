@@ -8,7 +8,7 @@ using System.Threading.Tasks;
 
 namespace KMeansClustering
 {
-    internal abstract class NotifyPropertyChanged : INotifyPropertyChanged
+    public abstract class NotifyPropertyChanged : INotifyPropertyChanged
     {
         public event PropertyChangedEventHandler PropertyChanged;
 
