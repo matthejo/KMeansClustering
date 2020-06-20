@@ -131,7 +131,7 @@ namespace KMeansClustering
         private void SaveWeightedColorsToJson(BitmapClusterOperation clusterOperation, string outputDirectory, IColorSpace colorSpace, int clusters)
         {
             List<WeightedColor> colors = clusterOperation.ColorWeights.Zip(clusterOperation.Colors, (w, c) => new WeightedColor(w, c.ToStandardRgbColor())).OrderByDescending(wc => wc.PixelCount).ToList();
-            WeightedColorSet set = new WeightedColorSet(colors.Sum(c => c.PixelCount), colors);
+            WeightedColorSet set = new WeightedColorSet(clusterOperation.PixelWidth, clusterOperation.PixelHeight, colors);
             File.WriteAllText(GetOutputFileName(OriginalFilePath, outputDirectory, colorSpace, clusters, ".json"), JsonConvert.SerializeObject(set));
         }
 

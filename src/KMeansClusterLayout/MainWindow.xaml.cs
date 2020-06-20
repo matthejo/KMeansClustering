@@ -1,4 +1,5 @@
 ﻿using KMeansClustering;
+using Microsoft.Win32;
 using Microsoft.WindowsAPICodePack.Dialogs;
 using Newtonsoft.Json;
 using System;
@@ -6,9 +7,11 @@ using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.IO;
 using System.Linq;
+using System.Numerics;
 using System.Threading;
 using System.Threading.Tasks;
 using System.Windows;
+using System.Windows.Media.Imaging;
 using System.Windows.Threading;
 
 namespace KMeansClusterLayout
@@ -26,6 +29,7 @@ namespace KMeansClusterLayout
         }
 
         private readonly ObservableCollection<ColorClusteredBitmap> sources = new ObservableCollection<ColorClusteredBitmap>();
+        private float averageAspectRatio = 1.0f;
 
         private void LoadBatchImagesDirectory(object sender, RoutedEventArgs e)
         {
@@ -33,7 +37,7 @@ namespace KMeansClusterLayout
             {
                 Title = "Original Images",
                 IsFolderPicker = true,
-                DefaultDirectory = Settings.Default.OriginalImagePath
+                InitialDirectory = Settings.Default.OriginalImagePath
             };
 
             if (originalOpenFileDialog.ShowDialog() == CommonFileDialogResult.Ok)
@@ -45,7 +49,7 @@ namespace KMeansClusterLayout
                 {
                     Title = "Converted Images",
                     IsFolderPicker = true,
-                    DefaultDirectory = Settings.Default.ConvertedImagePath
+                    InitialDirectory = Settings.Default.ConvertedImagePath
                 };
 
                 if (convertedOpenFileDialog.ShowDialog() == CommonFileDialogResult.Ok)
@@ -77,6 +81,9 @@ namespace KMeansClusterLayout
             int progress = 0;
             var timer = InitializeProgress(joinedPaths.Length, () => progress);
 
+            long totalWidths = 0;
+            long totalHeights = 0;
+
             await Task.Run(() =>
             {
                 Parallel.For(0, joinedPaths.Length, i =>
@@ -86,6 +93,9 @@ namespace KMeansClusterLayout
                     {
                         WeightedColorSet set = JsonConvert.DeserializeObject<WeightedColorSet>(File.ReadAllText(histogramFile));
                         bitmaps[i] = new ColorClusteredBitmap(joinedPaths[i].Item1, joinedPaths[i].Item2, set);
+
+                        Interlocked.Add(ref totalWidths, bitmaps[i].Histogram.PixelWidth);
+                        Interlocked.Add(ref totalHeights, bitmaps[i].Histogram.PixelHeight);
                     }
 
                     Interlocked.Increment(ref progress);
@@ -98,6 +108,8 @@ namespace KMeansClusterLayout
             {
                 sources.Add(result);
             }
+
+            averageAspectRatio = (float)totalWidths / totalHeights;
         }
 
         private DispatcherTimer InitializeProgress(int count, Func<int> progressEvaluator)
@@ -120,38 +132,69 @@ namespace KMeansClusterLayout
             SharedProgress.Visibility = Visibility.Hidden;
         }
 
-        private async void FindClosestImages(object sender, RoutedEventArgs e)
+        private async void OpenMosaicImage(object sender, RoutedEventArgs e)
         {
-            ColorClusteredBitmap first = (ColorClusteredBitmap)ImageList.SelectedItem;
-            ClosestList.ItemsSource = null;
-
-            if (first != null)
+            OpenFileDialog originalOpenFileDialog = new OpenFileDialog
             {
-                int progress = 0;
-                var timer = InitializeProgress(sources.Count, () => progress);
+                Title = "Mosaic Image",
+                Filter = "Images|*.jpg;*.png",
+                InitialDirectory = Settings.Default.OriginalImagePath
+            };
 
-                float[] distances = new float[sources.Count];
-                bool usePermutations = UsePermutationForDistance.IsChecked == true;
+            if (originalOpenFileDialog.ShowDialog() == true)
+            {
+                var originalImage = BitmapFrame.Create(new Uri(originalOpenFileDialog.FileName), BitmapCreateOptions.None, BitmapCacheOption.Default);
+                var targetImage = (await CreateSampledBitmap(originalImage.ToStandardRgbBitmap(), averageAspectRatio, sources.Count)).ToBitmapSource();
+                SimplifiedBitmap.Source = targetImage;
+                SimplifiedBitmap.Width = targetImage.PixelWidth * 1.5;
+                SimplifiedBitmap.Height = targetImage.PixelHeight;
+            }
+        }
 
-                await Task.Run(() =>
+        private Task<StandardRgbBitmap> CreateSampledBitmap(StandardRgbBitmap source, float volumeAspectRatio, int totalVolumeCount)
+        {
+            return Task.Run(() =>
+            {
+                // Determine the ideal width and height of each volume
+                //      x * y = totalvolumeCount
+                //      x * volumeAspectRatio / y = source.w / source.h
+                //   => y = totalVolumeCount / x
+                //   => x * x * volumeAspectRatio / totalVolumeCount = source.w / source.h
+                //   => x ^ 2 = source.w / source.h * totalVolumeCount / volumeAspectRatio
+                //   => y = sqrt(source.w / source.h * totalVolumeCount / volumeAspectRatio)
+
+                double targetWidth = Math.Sqrt((double)source.Width / source.Height * totalVolumeCount / volumeAspectRatio);
+                double targetHeight = totalVolumeCount / targetWidth;
+
+                int width = (int)targetWidth;
+                int height = (int)targetHeight;
+
+                int areaWidth = source.Width / width;
+                int areaHeight = source.Height / height;
+
+                int startX = (source.Width - width * areaWidth) / 2;
+                int startY = (source.Height - height * areaHeight) / 2;
+
+                StandardRgbColor[] pixels = new StandardRgbColor[width * height];
+                Parallel.For(0, width, targetX =>
                 {
-                    Parallel.For(0, sources.Count, i =>
+                    for (int targetY = 0; targetY < height; targetY++)
                     {
-                        distances[i] = first.DistanceTo(sources[i], usePermutations);
-                        Interlocked.Increment(ref progress);
-                    });
+                        ColorAverageAccumulator accumulator = new ColorAverageAccumulator();
+                        for (int sourceX = startX + targetX * areaWidth; sourceX < startX + (targetX + 1) * areaWidth; sourceX++)
+                        {
+                            for (int sourceY = startY + targetY * areaHeight; sourceY < startY + (targetY + 1) * areaHeight; sourceY++)
+                            {
+                                accumulator.AddSample((Vector3)source.Pixels[sourceY * source.Width + sourceX].ToCieLab());
+                            }
+                        }
+
+                        pixels[targetY * width + targetX] = ((CieLabColor)accumulator.GetAverage()).ToStandardRgb();
+                    }
                 });
 
-                FinishProgress(timer);
-
-                SortedList<Tuple<int, float>, ColorClusteredBitmap> distanceList = new SortedList<Tuple<int, float>, ColorClusteredBitmap>(new SortedTupleComparer());
-                for (int i = 0; i < distances.Length; i++)
-                {
-                    distanceList.Add(Tuple.Create(i, distances[i]), sources[i]);
-                }
-
-                ClosestList.ItemsSource = distanceList.Values.Take(100).ToArray();
-            }
+                return new StandardRgbBitmap(pixels, width, height, source.DpiX, source.DpiY);
+            });
         }
 
         private class SortedTupleComparer : IComparer<Tuple<int, float>>

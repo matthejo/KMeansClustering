@@ -22,6 +22,8 @@ namespace KMeansClustering
         private bool isRunning;
         private bool isComplete;
         private readonly WeakReference<BitmapSource> bitmap = new WeakReference<BitmapSource>(null);
+        private int pixelWidth;
+        private int pixelHeight;
         private IList<int> colorWeights;
         private IList<Color> colors;
 
@@ -78,6 +80,18 @@ namespace KMeansClustering
             set { SetProperty(ref colors, value); }
         }
 
+        public int PixelWidth
+        {
+            get { return pixelWidth; }
+            set { SetProperty(ref pixelWidth, value); }
+        }
+
+        public int PixelHeight
+        {
+            get { return pixelHeight; }
+            set { SetProperty(ref pixelHeight, value); }
+        }
+
         public ICommand SaveCommand
         {
             get
@@ -101,6 +115,8 @@ namespace KMeansClustering
             IsComplete = false;
             ColorWeights = null;
             Colors = null;
+            PixelWidth = sourceBitmap.Width;
+            PixelHeight = sourceBitmap.Height;
             DateTime startTime = DateTime.Now;
 
             string currentStatus = "Computing clusters...";

@@ -59,167 +59,168 @@ namespace KMeansClustering
             });
         }
 
-    private static Vector3[] ConvertToColorSpace(StandardRgbColor[] pixels, IColorSpace colorSpace)
-    {
-        return pixels.Select(p => colorSpace.ConvertFromStandardRgb(p)).ToArray();
-    }
-
-    public Task<Vector3[]> ChooseDifferentiatedClusters(int subsetCount)
-    {
-        return Task.Run(() =>
+        private static Vector3[] ConvertToColorSpace(StandardRgbColor[] pixels, IColorSpace colorSpace)
         {
-            Vector3[] differentiatedClusters = new Vector3[subsetCount];
-            differentiatedClusters[0] = this.clusterMeans[this.clusterWeights.Select((w, i) => new { Index = i, Weight = w }).OrderByDescending(t => t.Weight).Select(t => t.Index).First()];
+            return pixels.Select(p => colorSpace.ConvertFromStandardRgb(p)).ToArray();
+        }
 
-            for (int differentClusterIndex = 1; differentClusterIndex < differentiatedClusters.Length; differentClusterIndex++)
+        public Task<Vector3[]> ChooseDifferentiatedClusters(int subsetCount)
+        {
+            return Task.Run(() =>
             {
-                float highestDistance = 0;
-                int bestCluster = -1;
+                Vector3[] differentiatedClusters = new Vector3[subsetCount];
+                differentiatedClusters[0] = this.clusterMeans[this.clusterWeights.Select((w, i) => new { Index = i, Weight = w }).OrderByDescending(t => t.Weight).Select(t => t.Index).First()];
 
-                for (int clusterIndex = 0; clusterIndex < this.clusterMeans.Length; clusterIndex++)
+                for (int differentClusterIndex = 1; differentClusterIndex < differentiatedClusters.Length; differentClusterIndex++)
                 {
-                    float minDistance = float.MaxValue;
-                    for (int previousDifferentClusterIndex = 0; previousDifferentClusterIndex < differentClusterIndex; previousDifferentClusterIndex++)
+                    float highestDistance = 0;
+                    int bestCluster = -1;
+
+                    for (int clusterIndex = 0; clusterIndex < this.clusterMeans.Length; clusterIndex++)
                     {
-                        minDistance = Math.Min(minDistance, Vector3.DistanceSquared(clusterMeans[clusterIndex], differentiatedClusters[previousDifferentClusterIndex]));
+                        float minDistance = float.MaxValue;
+                        for (int previousDifferentClusterIndex = 0; previousDifferentClusterIndex < differentClusterIndex; previousDifferentClusterIndex++)
+                        {
+                            minDistance = Math.Min(minDistance, Vector3.DistanceSquared(clusterMeans[clusterIndex], differentiatedClusters[previousDifferentClusterIndex]));
+                        }
+
+                        if (minDistance > highestDistance)
+                        {
+                            bestCluster = clusterIndex;
+                            highestDistance = minDistance;
+                        }
                     }
 
-                    if (minDistance > highestDistance)
+                    differentiatedClusters[differentClusterIndex] = clusterMeans[bestCluster];
+                }
+
+                return differentiatedClusters;
+            });
+        }
+
+        public Task<int> ClusterAsync(Func<int, Task> iterationProgressUpdate, int maxIterations = 50)
+        {
+            return Task.Run(async () =>
+            {
+                int iterationCount = 0;
+
+                this.pixels = ConvertToColorSpace(this.originalPixels, colorSpace);
+
+                if (clusterMeans == null)
+                {
+                    clusterMeans = CreateRandomSeeding(pixels, clusterWeights.Length);
+                }
+
+                while (!IterateNextCluster(clusterMeans, pixelClusters))
+                {
+                    iterationCount++;
+                    await (iterationProgressUpdate?.Invoke(iterationCount) ?? Task.CompletedTask);
+                    if (iterationCount >= maxIterations)
                     {
-                        bestCluster = clusterIndex;
-                        highestDistance = minDistance;
+                        break;
                     }
                 }
+                AssignPixelsFromClusters(clusterMeans, pixelClusters);
 
-                differentiatedClusters[differentClusterIndex] = clusterMeans[bestCluster];
-            }
+                return iterationCount;
+            });
+        }
 
-            return differentiatedClusters;
-        });
-    }
-
-    public Task<int> ClusterAsync(Func<int, Task> iterationProgressUpdate, int maxIterations = 50)
-    {
-        return Task.Run(async () =>
+        private bool IterateNextCluster(Vector3[] clusterMeans, int[] clusterAssigments)
         {
-            int iterationCount = 0;
-
-            this.pixels = ConvertToColorSpace(this.originalPixels, colorSpace);
-
-            if (clusterMeans == null)
+            for (int i = 0; i < clusterWeights.Length; i++)
             {
-                clusterMeans = CreateRandomSeeding(pixels, clusterWeights.Length);
+                clusterWeights[i] = 0;
             }
 
-            while (!IterateNextCluster(clusterMeans, pixelClusters))
-            {
-                iterationCount++;
-                await (iterationProgressUpdate?.Invoke(iterationCount) ?? Task.CompletedTask);
-                if (iterationCount >= maxIterations)
-                {
-                    break;
-                }
-            }
-            AssignPixelsFromClusters(clusterMeans, pixelClusters);
-
-            return iterationCount;
-        });
-    }
-
-    private bool IterateNextCluster(Vector3[] clusterMeans, int[] clusterAssigments)
-    {
-        for (int i = 0; i < clusterWeights.Length; i++)
-        {
-            clusterWeights[i] = 0;
-        }
-
-        Parallel.For(0, pixels.Length, pixelIndex =>
-        {
-            int bestCluster = -1;
-            float bestDistance = float.MaxValue;
-
-            for (int clusterIndex = 0; clusterIndex < clusterMeans.Length; clusterIndex++)
-            {
-                float distance = Vector3.DistanceSquared(clusterMeans[clusterIndex], pixels[pixelIndex]);
-                if (distance < bestDistance)
-                {
-                    bestCluster = clusterIndex;
-                    bestDistance = distance;
-                }
-            }
-
-            clusterAssigments[pixelIndex] = bestCluster;
-            Interlocked.Increment(ref clusterWeights[bestCluster]);
-        });
-
-        ColorAverageAccumulator[] accumulatedSamples = new ColorAverageAccumulator[clusterMeans.Length];
-        for (int pixelIndex = 0; pixelIndex < pixels.Length; pixelIndex++)
-        {
-            accumulatedSamples[clusterAssigments[pixelIndex]].AddSample(pixels[pixelIndex]);
-        }
-
-        bool isComplete = true;
-        for (int i = 0; i < clusterMeans.Length; i++)
-        {
-            Vector3 newValue = accumulatedSamples[i].GetAverage();
-            isComplete = isComplete && AreNearlyEqual(newValue, clusterMeans[i]);
-            clusterMeans[i] = newValue;
-        }
-
-        return isComplete;
-    }
-
-    private void AssignPixelsFromClusters(Vector3[] clusterMeans, int[] clusterAssigments)
-    {
-        for (int pixelIndex = 0; pixelIndex < pixels.Length; pixelIndex++)
-        {
-            pixels[pixelIndex] = clusterMeans[clusterAssigments[pixelIndex]];
-        }
-    }
-
-    private static bool AreNearlyEqual(Vector3 a, Vector3 b)
-    {
-        Vector3 delta = Vector3.Abs(a - b);
-        return delta.X < Epsilon &&
-            delta.Y < Epsilon &&
-            delta.Z < Epsilon;
-    }
-
-    private static Vector3[] CreateRandomSeeding(Vector3[] pixels, int clusterCount)
-    {
-        Random random = new Random();
-        Vector3[] clusterMeans = new Vector3[clusterCount];
-        // Randomly choose a first cluster point
-        clusterMeans[0] = pixels[random.Next(pixels.Length)];
-
-        float[] closestDistances = new float[pixels.Length];
-        Parallel.For(0, pixels.Length, i => closestDistances[i] = float.MaxValue);
-
-        for (int clusterIndex = 1; clusterIndex < clusterMeans.Length; clusterIndex++)
-        {
-            // Choose a cluster point based on k-means++, where the weighted probability of the point being chosen is associated with its
-            // squared distance from the nearest existing point.
             Parallel.For(0, pixels.Length, pixelIndex =>
             {
-                closestDistances[pixelIndex] = Math.Min(closestDistances[pixelIndex], Vector3.DistanceSquared(clusterMeans[clusterIndex - 1], pixels[pixelIndex]));
+                int bestCluster = -1;
+                float bestDistance = float.MaxValue;
+
+                for (int clusterIndex = 0; clusterIndex < clusterMeans.Length; clusterIndex++)
+                {
+                    float distance = Vector3.DistanceSquared(clusterMeans[clusterIndex], pixels[pixelIndex]);
+                    if (distance < bestDistance)
+                    {
+                        bestCluster = clusterIndex;
+                        bestDistance = distance;
+                    }
+                }
+
+                clusterAssigments[pixelIndex] = bestCluster;
+                Interlocked.Increment(ref clusterWeights[bestCluster]);
             });
 
-            double weightedRandom = random.NextDouble() * closestDistances.Sum();
+            ColorAverageAccumulator[] accumulatedSamples = new ColorAverageAccumulator[clusterMeans.Length];
             for (int pixelIndex = 0; pixelIndex < pixels.Length; pixelIndex++)
             {
-                weightedRandom -= closestDistances[pixelIndex];
-                if (weightedRandom <= 0 || pixelIndex == pixels.Length - 1)
-                {
-                    clusterMeans[clusterIndex] = pixels[pixelIndex];
-                    break;
-                }
+                accumulatedSamples[clusterAssigments[pixelIndex]].AddSample(pixels[pixelIndex]);
+            }
+
+            bool isComplete = true;
+            for (int i = 0; i < clusterMeans.Length; i++)
+            {
+                Vector3 newValue = accumulatedSamples[i].GetAverage();
+                isComplete = isComplete && AreNearlyEqual(newValue, clusterMeans[i]);
+                clusterMeans[i] = newValue;
+            }
+
+            return isComplete;
+        }
+
+        private void AssignPixelsFromClusters(Vector3[] clusterMeans, int[] clusterAssigments)
+        {
+            for (int pixelIndex = 0; pixelIndex < pixels.Length; pixelIndex++)
+            {
+                pixels[pixelIndex] = clusterMeans[clusterAssigments[pixelIndex]];
             }
         }
 
-        return clusterMeans;
+        private static bool AreNearlyEqual(Vector3 a, Vector3 b)
+        {
+            Vector3 delta = Vector3.Abs(a - b);
+            return delta.X < Epsilon &&
+                delta.Y < Epsilon &&
+                delta.Z < Epsilon;
+        }
+
+        private static Vector3[] CreateRandomSeeding(Vector3[] pixels, int clusterCount)
+        {
+            Random random = new Random();
+            Vector3[] clusterMeans = new Vector3[clusterCount];
+            // Randomly choose a first cluster point
+            clusterMeans[0] = pixels[random.Next(pixels.Length)];
+
+            float[] closestDistances = new float[pixels.Length];
+            Parallel.For(0, pixels.Length, i => closestDistances[i] = float.MaxValue);
+
+            for (int clusterIndex = 1; clusterIndex < clusterMeans.Length; clusterIndex++)
+            {
+                // Choose a cluster point based on k-means++, where the weighted probability of the point being chosen is associated with its
+                // squared distance from the nearest existing point.
+                Parallel.For(0, pixels.Length, pixelIndex =>
+                {
+                    closestDistances[pixelIndex] = Math.Min(closestDistances[pixelIndex], Vector3.DistanceSquared(clusterMeans[clusterIndex - 1], pixels[pixelIndex]));
+                });
+
+                double weightedRandom = random.NextDouble() * closestDistances.Sum();
+                for (int pixelIndex = 0; pixelIndex < pixels.Length; pixelIndex++)
+                {
+                    weightedRandom -= closestDistances[pixelIndex];
+                    if (weightedRandom <= 0 || pixelIndex == pixels.Length - 1)
+                    {
+                        clusterMeans[clusterIndex] = pixels[pixelIndex];
+                        break;
+                    }
+                }
+            }
+
+            return clusterMeans;
+        }
     }
 
-    private struct ColorAverageAccumulator
+    public struct ColorAverageAccumulator
     {
         private Vector3 Total;
         private int Count;
@@ -235,5 +236,4 @@ namespace KMeansClustering
             return Total / Count;
         }
     }
-}
 }

@@ -21,7 +21,7 @@
 
         <StackPanel Grid.Row="0" Grid.ColumnSpan="2" Orientation="Horizontal" Margin="-1,-1,0,0" IsEnabled="{Binding ElementName=Root, Path=CanLoad}">
             <Button Content="Open Source Images" Click="LoadBatchImagesDirectory" Margin="8" MinWidth="72" Padding="8,4"/>
-            <Button Content="Find Closest Images" Click="FindClosestImages" Margin="8" MinWidth="72" Padding="8,4"/>
+            <Button Content="Open Mosaic Image" Click="OpenMosaicImage" Margin="8" MinWidth="72" Padding="8,4"/>
             <CheckBox Content="Use Permutation For Distance" x:Name="UsePermutationForDistance" VerticalAlignment="Center" />
         </StackPanel>
 
@@ -38,20 +38,8 @@
             </ListBox.ItemTemplate>
         </ListBox>
 
-        <ItemsControl x:Name="ClosestList" Grid.Row="2" Grid.Column="1">
-            <ItemsControl.ItemsPanel>
-                <ItemsPanelTemplate>
-                    <WrapPanel />
-                </ItemsPanelTemplate>
-            </ItemsControl.ItemsPanel>
-            <ItemsControl.ItemTemplate>
-                <DataTemplate>
-                    <StackPanel Width="240" Orientation="Vertical">
-                        <Image Source="{Binding OriginalImage}" Stretch="UniformToFill" Width="240" Height="160" Margin="1" />
-                        <Grid Height="12" util:GridColorHistogramProperties.ColumnWidths="{Binding ColorWeights}" util:GridColorHistogramProperties.ColorValues="{Binding Colors}"/>
-                    </StackPanel>
-                </DataTemplate>
-            </ItemsControl.ItemTemplate>
-        </ItemsControl>
+        <Viewbox Grid.Row="2" Grid.Column="1">
+            <Image x:Name="SimplifiedBitmap" Stretch="Fill" RenderOptions.BitmapScalingMode="NearestNeighbor" />
+        </Viewbox>
     </Grid>
 </Window>
