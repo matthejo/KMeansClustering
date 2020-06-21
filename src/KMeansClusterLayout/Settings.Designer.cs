@@ -46,5 +46,17 @@ namespace KMeansClusterLayout {
                 this["ConvertedImagePath"] = value;
             }
         }
+        
+        [global::System.Configuration.UserScopedSettingAttribute()]
+        [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
+        [global::System.Configuration.DefaultSettingValueAttribute("")]
+        public string MosaicImagePath {
+            get {
+                return ((string)(this["MosaicImagePath"]));
+            }
+            set {
+                this["MosaicImagePath"] = value;
+            }
+        }
     }
 }

@@ -36,9 +36,9 @@ namespace KMeansClustering
             return new StandardRgbColor { R = color.R, G = color.G, B = color.B };
         }
 
-        public static BitmapSource ToBitmapSource(this StandardRgbBitmap bitmap)
+        public static byte[] ToBgra32PixelArray(this StandardRgbBitmap bitmap, out int stride)
         {
-            int stride = bitmap.Width * sizeof(int);
+            stride = bitmap.Width * sizeof(int);
 
             byte[] rawPixels = new byte[stride * bitmap.Height];
             for (int i = 0; i < rawPixels.Length; i += 4)
@@ -49,6 +49,13 @@ namespace KMeansClustering
                 rawPixels[i + 2] = bitmap.Pixels[source].R;
                 rawPixels[i + 3] = 0xFF;
             }
+
+            return rawPixels;
+        }
+
+        public static BitmapSource ToBitmapSource(this StandardRgbBitmap bitmap)
+        {
+            byte[] rawPixels = ToBgra32PixelArray(bitmap, out int stride);
 
             return BitmapSource.Create(bitmap.Width, bitmap.Height, bitmap.DpiX, bitmap.DpiY, PixelFormats.Bgra32, null, rawPixels, stride);
         }

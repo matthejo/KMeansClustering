@@ -3,6 +3,7 @@ using Microsoft.Win32;
 using Microsoft.WindowsAPICodePack.Dialogs;
 using Newtonsoft.Json;
 using System;
+using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.IO;
@@ -11,6 +12,7 @@ using System.Numerics;
 using System.Threading;
 using System.Threading.Tasks;
 using System.Windows;
+using System.Windows.Media;
 using System.Windows.Media.Imaging;
 using System.Windows.Threading;
 
@@ -30,6 +32,9 @@ namespace KMeansClusterLayout
 
         private readonly ObservableCollection<ColorClusteredBitmap> sources = new ObservableCollection<ColorClusteredBitmap>();
         private float averageAspectRatio = 1.0f;
+        private int averageWidth = 0;
+        private int averageHeight = 0;
+        private StandardRgbBitmap sampledBitmap;
 
         private void LoadBatchImagesDirectory(object sender, RoutedEventArgs e)
         {
@@ -109,6 +114,8 @@ namespace KMeansClusterLayout
                 sources.Add(result);
             }
 
+            averageWidth = (int)(totalWidths / sources.Count);
+            averageHeight = (int)(totalHeights / sources.Count);
             averageAspectRatio = (float)totalWidths / totalHeights;
         }
 
@@ -134,17 +141,21 @@ namespace KMeansClusterLayout
 
         private async void OpenMosaicImage(object sender, RoutedEventArgs e)
         {
-            OpenFileDialog originalOpenFileDialog = new OpenFileDialog
+            OpenFileDialog mosaicOpenFileDialog = new OpenFileDialog
             {
                 Title = "Mosaic Image",
                 Filter = "Images|*.jpg;*.png",
-                InitialDirectory = Settings.Default.OriginalImagePath
+                InitialDirectory = Settings.Default.MosaicImagePath
             };
 
-            if (originalOpenFileDialog.ShowDialog() == true)
+            if (mosaicOpenFileDialog.ShowDialog() == true)
             {
-                var originalImage = BitmapFrame.Create(new Uri(originalOpenFileDialog.FileName), BitmapCreateOptions.None, BitmapCacheOption.Default);
-                var targetImage = (await CreateSampledBitmap(originalImage.ToStandardRgbBitmap(), averageAspectRatio, sources.Count)).ToBitmapSource();
+                Settings.Default.MosaicImagePath = Path.GetDirectoryName(mosaicOpenFileDialog.FileName);
+                Settings.Default.Save();
+
+                var originalImage = BitmapFrame.Create(new Uri(mosaicOpenFileDialog.FileName), BitmapCreateOptions.None, BitmapCacheOption.Default);
+                sampledBitmap = await CreateSampledBitmap(originalImage.ToStandardRgbBitmap(), averageAspectRatio, sources.Count);
+                var targetImage = sampledBitmap.ToBitmapSource();
                 SimplifiedBitmap.Source = targetImage;
                 SimplifiedBitmap.Width = targetImage.PixelWidth * 1.5;
                 SimplifiedBitmap.Height = targetImage.PixelHeight;
@@ -208,6 +219,138 @@ namespace KMeansClusterLayout
                 }
 
                 return x.Item1.CompareTo(y.Item1);
+            }
+        }
+
+        private async void GenerateMosaic(object sender, RoutedEventArgs e)
+        {
+            var availableSources = sources.ToList();
+
+            var sourcePixels = sampledBitmap.Pixels.Select(p => ColorSpaces.CieLab.ConvertFromStandardRgb(p)).ToArray();
+            ColorClusteredBitmap[] targetPixelImages = new ColorClusteredBitmap[sourcePixels.Length];
+
+            int progressIndex = 0;
+            var timer = InitializeProgress(targetPixelImages.Length * 2, () => progressIndex);
+
+            await Task.Run(() =>
+            {
+                for (; progressIndex < sampledBitmap.Pixels.Length; progressIndex++)
+                {
+                    targetPixelImages[progressIndex] = FindBestMatchAndRemove(sourcePixels[progressIndex], ColorSpaces.CieLab, availableSources);
+                }
+            });
+            FinishProgress(timer);
+
+            const double maxSize = 23000;
+            double scaleXFit = Math.Min(1, maxSize / (sampledBitmap.Width * averageWidth));
+            double scaleYFit = Math.Min(1, maxSize / (sampledBitmap.Height * averageHeight));
+            double scaleFit = Math.Min(scaleXFit, scaleYFit);
+
+            int cellWidth = (int)(averageWidth * scaleFit);
+            int cellHeight = (int)(averageHeight * scaleFit);
+
+            var output = await CreateOutputBitmap(targetPixelImages, sampledBitmap.Width, sampledBitmap.Height, (int)(averageWidth * scaleFit), (int)(averageHeight * scaleFit));
+
+            SimplifiedBitmap.Source = output;
+            SimplifiedBitmap.Width = output.PixelWidth;
+            SimplifiedBitmap.Height = output.PixelHeight;
+        }
+
+        private async Task<WriteableBitmap> CreateOutputBitmap(ColorClusteredBitmap[] inputBitmaps, int cellXCount, int cellYCount, int cellPixelWidth, int cellPixelHeight)
+        {
+            long totalWidth = cellXCount * cellPixelWidth;
+            long totalHeight = cellYCount * cellPixelHeight;
+
+            WriteableBitmap writeableBitmap = new WriteableBitmap(cellXCount * cellPixelWidth, cellYCount * cellPixelHeight, 96, 96, PixelFormats.Bgra32, null);
+            ConcurrentQueue<WriteBitmapOperation> writeableBitmapUpdates = new ConcurrentQueue<WriteBitmapOperation>();
+
+            int progressIndex = cellXCount * cellYCount;
+            var progressTimer = InitializeProgress(progressIndex * 2, () =>
+            {
+                while (writeableBitmapUpdates.TryDequeue(out var operation))
+                {
+                    writeableBitmap.WritePixels(new Int32Rect(0, 0, cellPixelWidth, cellPixelHeight), operation.Pixels, operation.Stride, cellPixelWidth * operation.X, cellPixelHeight * operation.Y);
+                }
+
+                return progressIndex;
+            });
+
+            await Task.Run(() =>
+            {
+                Parallel.For(0, cellYCount, y =>
+                {
+                    for (int x = 0; x < cellXCount; x++)
+                    {
+                        var source = inputBitmaps[y * cellXCount + x];
+                        var sourceConverted = ConvertToTargetSize(source.OriginalImage, cellPixelWidth, cellPixelHeight).ToStandardRgbBitmap();
+                        var sourceConvertedPixels = sourceConverted.ToBgra32PixelArray(out int stride);
+                        writeableBitmapUpdates.Enqueue(new WriteBitmapOperation(sourceConvertedPixels, stride, x, y));
+                        Interlocked.Increment(ref progressIndex);
+                    }
+                });
+            });
+
+            FinishProgress(progressTimer);
+
+            return writeableBitmap;
+        }
+
+        private static ColorClusteredBitmap FindBestMatchAndRemove(Vector3 pixel, IColorSpace colorSpace, List<ColorClusteredBitmap> availableSources)
+        {
+            float bestDistance = float.MaxValue;
+            int bestIndex = -1;
+
+            for (int i = 0; i < availableSources.Count; i++)
+            {
+                var distanceSquared = FindDistanceSquared(pixel, availableSources[i].Histogram, colorSpace);
+                if (distanceSquared < bestDistance)
+                {
+                    bestDistance = distanceSquared;
+                    bestIndex = i;
+                }
+            }
+
+            var result = availableSources[bestIndex];
+            availableSources.RemoveAt(bestIndex);
+            return result;
+        }
+
+        private static float FindDistanceSquared(Vector3 pixel, WeightedColorSet colorSet, IColorSpace colorSpace)
+        {
+            float distanceSquared = 0.0f;
+            foreach (var weightedColor in colorSet.Colors)
+            {
+                distanceSquared += Vector3.DistanceSquared(pixel, colorSpace.ConvertFromStandardRgb(weightedColor.Color)) * weightedColor.PixelCount / colorSet.PixelCount;
+            }
+
+            return distanceSquared;
+        }
+
+        private static BitmapSource ConvertToTargetSize(BitmapSource source, int targetWidth, int targetHeight)
+        {
+            // First scale the bitmap to match either the height or the width, then crop the bitmap to center it
+            double scale = Math.Max((double)targetHeight / source.PixelHeight, (double)targetWidth / source.PixelWidth);
+            TransformedBitmap scaledBitmap = new TransformedBitmap(source, new ScaleTransform(scale, scale));
+            CroppedBitmap croppedBitmap = new CroppedBitmap(scaledBitmap, new Int32Rect((scaledBitmap.PixelWidth - targetWidth) / 2, (scaledBitmap.PixelHeight - targetHeight) / 2, targetWidth, targetHeight));
+            return croppedBitmap;
+        }
+
+        private struct WriteBitmapOperation
+        {
+            public byte[] Pixels { get; }
+
+            public int Stride { get; }
+
+            public int X { get; }
+
+            public int Y { get; }
+
+            public WriteBitmapOperation(byte[] pixels, int stride, int x, int y)
+            {
+                Pixels = pixels;
+                Stride = stride;
+                X = x;
+                Y = y;
             }
         }
     }
